@@ -49,7 +49,7 @@ const relatedDishes = [
     },
 ]
 
-export function RelatedDishes() {
+export function RelatedDishes({ currentDishId }: { currentDishId?: string }) {
     return (
         <section className="py-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">You Might Also Like</h2>

@@ -4,72 +4,20 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
-const dishes = [
-    {
-        title: "Teriyaki Chicken Rice",
-        desc: "Fragrant white rice combined with savory Teriyaki grilled chicken, fresh vegetables.",
-        rating: 4.8,
-        calories: "520 kcal",
-        time: "15 mins",
-        price: "65.000 đ",
-        slug: "healthy-teriyaki-chicken-rice",
-        image: (
-            <img
-                src="/images/pieces-chicken-fillet-with-mushrooms-stewed-tomato-sauce-with-boiled-broccoli-rice-proper-nutrition-healthy-lifestyle-dietetic-menu-top-view.jpg"
-                alt="Teriyaki Chicken Rice"
-                className="w-full h-full object-cover"
-            />
-        ),
-    },
-    {
-        title: "Bun Cha Ha Noi",
-        desc: "The essence of Hanoi cuisine. Succulent minced pork patties and pork belly slices are marinated in traditional spices and charcoal-grilled to smoky perfection.",
-        rating: 4.9,
-        calories: "580 kcal",
-        time: "20 mins",
-        price: "50.000 đ",
-        slug: "bun-cha-ha-noi",
-        image: (
-            <img
-                src="/images/bunchahanoi.jpg"
-                alt="Bun Cha Ha Noi"
-                className="w-full h-full object-cover"
-            />
-        ),
-    },
-    {
-        title: "Tiramisu Cake",
-        desc: "A love cake from Italy. The rich flavor of rum, the bitterness of cocoa, and the characteristic creaminess of cheese.",
-        rating: 4.7,
-        calories: "380 kcal",
-        time: "2 mins",
-        price: "20.000 đ",
-        slug: "tiramisu-cake",
-        image: (
-            <img
-                src="/images/tiramisu.jpg"
-                alt="Tiramisu Cake"
-                className="w-full h-full object-cover"
-            />
-        ),
-    },
-    {
-        title: "Tuna Salad",
-        desc: "Tuna salad with greens is a refreshing and nutritious dish.",
-        rating: 4.6,
-        calories: "350 kcal",
-        time: "8 mins",
-        price: "60.000 đ",
-        slug: "tuna-salad",
-        image: (
-            <img
-                src="/images/saladcangu.jpg"
-                alt="Tuna Salad"
-                className="w-full h-full object-cover"
-            />
-        ),
-    },
-]
+import dishesData from "@/data/dishes.json"
+
+// Map the JSON data to the component's expected format if needed, or update the component to use the JSON structure directly.
+// The JSON structure matches closely.
+const dishes = dishesData.map(dish => ({
+    ...dish,
+    image: (
+        <img
+            src={dish.image}
+            alt={dish.title}
+            className="w-full h-full object-cover"
+        />
+    ),
+}))
 
 export function PopularDishes() {
     return (

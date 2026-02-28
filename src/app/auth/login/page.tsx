@@ -5,25 +5,94 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Simulate login
-        localStorage.setItem("user", JSON.stringify({ name: "User" }));
-        // Dispatch event for other components to update
-        window.dispatchEvent(new Event("authChange"));
-        console.log("Login submitted, redirecting...");
-        router.push("/");
+        setError("");
+        setIsLoading(true);
+
+        try {
+            // First run the API for admin check and session establishment
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+            const normalizedEmail = email.trim().toLowerCase();
+
+            if (res.ok && data.success) {
+                // Check if user was registered locally
+                const registeredUsersStr = localStorage.getItem("registeredUsers");
+                const registeredUsers = registeredUsersStr ? JSON.parse(registeredUsersStr) : {};
+                const registeredUser = registeredUsers[normalizedEmail];
+
+                if (data.role !== 'admin') {
+                    // Force client-side password check against localStorage for non-admin
+                    if (registeredUser) {
+                        if (registeredUser.password !== password) {
+                            setError("Incorrect password.");
+                            setIsLoading(false);
+                            return;
+                        }
+                    } else {
+                        setError("Account does not exist. Please register.");
+                        setIsLoading(false);
+                        return;
+                    }
+                }
+
+                // Try to get existing name from localStorage (fallback)
+                const existingUserStr = localStorage.getItem("user");
+                const existingUser = existingUserStr ? JSON.parse(existingUserStr) : null;
+
+                let userName = email.split('@')[0] || "User";
+                if (registeredUser && registeredUser.name && registeredUser.name !== "User") {
+                    userName = registeredUser.name;
+                } else if (existingUser?.email === normalizedEmail && existingUser?.name) {
+                    userName = existingUser.name;
+                } else if (existingUser?.name && !existingUser?.email) {
+                    userName = existingUser.name;
+                }
+
+                // Set client-side auth state for Navbar
+                localStorage.setItem("user", JSON.stringify({
+                    name: userName,
+                    email: normalizedEmail,
+                    role: data.role,
+                    phone: registeredUser?.phone || existingUser?.phone || "",
+                    address: registeredUser?.address || existingUser?.address || "",
+                    birthdate: registeredUser?.birthdate || existingUser?.birthdate || ""
+                }));
+                window.dispatchEvent(new Event("authChange"));
+
+                if (data.role === 'admin') {
+                    router.push("/admin");
+                } else {
+                    router.push("/");
+                }
+            } else {
+                setError(data.error || "Login failed");
+            }
+        } catch (err) {
+            setError("Something went wrong. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -62,8 +131,13 @@ export default function LoginPage() {
                     <div className="mx-auto w-full max-w-md space-y-8">
 
                         <div className="space-y-2">
-                            <div className="inline-block rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-600 uppercase tracking-wide">
-                                Welcome Back
+                            <div className="flex items-center justify-between">
+                                <div className="inline-block rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-600 uppercase tracking-wide">
+                                    Welcome Back
+                                </div>
+                                <Link href="/" className="text-sm font-medium text-gray-500 hover:text-orange-500 transition-colors">
+                                    ← Back to Home
+                                </Link>
                             </div>
                             <h1 className="text-3xl font-bold text-gray-900">Login</h1>
                             <p className="text-gray-500 text-sm">
@@ -72,18 +146,30 @@ export default function LoginPage() {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {error && (
+                                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+                                    {error}
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Email or Phone Number</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                                    <Input placeholder="Name@example.com" className="pl-10 h-12 bg-gray-50 border-gray-200" required />
+                                    <Input
+                                        type="email"
+                                        placeholder="youremail@gmail.com"
+                                        className="pl-10 h-12 bg-gray-50 border-gray-200"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                    />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium text-gray-700">Password</label>
-                                    <Link href="#" className="text-xs font-medium text-orange-500 hover:underline">
+                                    <Link href="/auth/forgot-password" className="text-xs font-medium text-orange-500 hover:underline">
                                         Forgot password?
                                     </Link>
                                 </div>
@@ -94,6 +180,8 @@ export default function LoginPage() {
                                         placeholder="••••••••"
                                         className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200"
                                         required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
                                     />
                                     <button
                                         type="button"
@@ -105,8 +193,8 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 text-white h-12 text-lg font-medium shadow-orange-200 shadow-lg">
-                                Login
+                            <Button type="submit" disabled={isLoading} className="w-full bg-orange-500 hover:bg-orange-600 text-white h-12 text-lg font-medium shadow-orange-200 shadow-lg">
+                                {isLoading ? "Logging in..." : "Login"}
                             </Button>
                         </form>
 
@@ -149,12 +237,6 @@ export default function LoginPage() {
                             </Button>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div className="absolute bottom-4 right-8 flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm text-sm lg:flex hidden">
-                <div className="h-4 w-4 rounded-full bg-gray-900 flex items-center justify-center">
-                    <span className="text-[8px] text-white">🌙</span>
                 </div>
             </div>
 

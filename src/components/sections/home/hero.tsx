@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles, Star, Utensils } from "lucide-react"
 
@@ -72,36 +73,22 @@ export function Hero() {
                     </div>
 
                     {/* Right Content - Visual */}
-                    <div className="relative flex justify-center items-center">
-                        {/* Main Circle Background */}
-                        <div className="absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-white rounded-full opacity-20 blur-3xl" />
+                    <div className="relative flex justify-center items-center h-full min-h-[400px]">
+                        {/* Animated Glowing Aura Behind the Image */}
+                        <div className="absolute inset-[-20px] bg-gradient-to-tr from-[#FF5733]/30 to-orange-400/30 blur-3xl rounded-[3rem] animate-[pulse_4s_cubic-bezier(0.4,0,0.6,1)_infinite] z-0" />
 
-                        <div className="relative w-[300px] h-[300px] md:w-[450px] md:h-[450px] bg-white rounded-full flex items-center justify-center shadow-2xl animate-in zoom-in duration-500">
-                            {/* Main Image Placeholder */}
-                            <div className="text-center p-8">
-                                <div className="w-48 h-32 bg-orange-100 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                                    <span className="text-primary text-4xl">🥗</span>
-                                </div>
-                            </div>
+                        {/* Enhanced Hero Image with Hover Effects */}
+                        <div className="relative w-full max-w-[550px] aspect-[4/3] rounded-[2rem] overflow-hidden border-[8px] border-white shadow-[0_0_80px_rgba(255,87,51,0.5)] z-10 transition-all duration-700 ease-out hover:scale-105 hover:shadow-[0_0_120px_rgba(255,87,51,0.8)] hover:-translate-y-2 cursor-pointer group">
+                            <Image
+                                src="/images/hero-image.jpg"
+                                alt="SmartBite Healthy Food"
+                                fill
+                                className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                                priority
+                            />
 
-                            {/* Floating Elements */}
-                            <div className="absolute -top-4 -right-4 md:top-10 md:right-0 bg-white p-3 rounded-2xl shadow-lg animate-bounce duration-[3000ms]">
-                                <span className="text-2xl">🥤</span>
-                            </div>
-
-                            <div className="absolute -bottom-4 -left-4 md:bottom-10 md:left-0 bg-white p-3 rounded-2xl shadow-lg animate-bounce duration-[3000ms] delay-700">
-                                <span className="text-2xl">🍰</span>
-                            </div>
-
-                            <div className="absolute bottom-20 -right-8 bg-white py-2 px-4 rounded-xl shadow-lg flex items-center gap-3">
-                                <div className="bg-green-100 p-1 rounded-full">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                </div>
-                                <div>
-                                    <div className="text-xs text-gray-400">Calories</div>
-                                    <div className="text-sm font-bold text-gray-900">180 kcal</div>
-                                </div>
-                            </div>
+                            {/* Inner subtle gradient overlay on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                         </div>
                     </div>
 

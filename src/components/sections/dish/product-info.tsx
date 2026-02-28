@@ -14,7 +14,7 @@ interface AiAnalysis {
 interface ProductInfoProps {
     title: string
     price: string
-    originalPrice?: string
+    originalPrice?: string | null
     rating: number
     reviewCount: number
     time: string

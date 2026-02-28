@@ -1,4 +1,4 @@
-import { UtensilsCrossed, Salad, Soup, Coffee, Cake, Popcorn } from "lucide-react"
+import { UtensilsCrossed, Salad, Soup, Coffee, Cake } from "lucide-react"
 
 const categories = [
     { name: "Main Course", icon: UtensilsCrossed },
@@ -6,7 +6,6 @@ const categories = [
     { name: "Soup", icon: Soup },
     { name: "Beverages", icon: Coffee },
     { name: "Dessert", icon: Cake },
-    { name: "Snacks", icon: Popcorn },
 ]
 
 export function Categories() {

@@ -1,29 +1,98 @@
 "use client";
 
 import Link from "next/link"
-import { ShoppingCart, User } from "lucide-react"
+import Image from "next/image"
+import { ShoppingCart, User, ReceiptText, History, LogOut, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function Navbar() {
+  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("User");
+
+  // Helper to get initials (e.g., "Thanh Phong" -> "TP")
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   useEffect(() => {
     // Check initial state
     const checkAuth = () => {
-      const user = localStorage.getItem("user");
-      setIsLoggedIn(!!user);
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        setIsLoggedIn(true);
+        try {
+          const user = JSON.parse(userStr);
+          if (user.name) setUserName(user.name);
+        } catch (e) {
+          // fallback
+        }
+      } else {
+        setIsLoggedIn(false);
+      }
     };
+
+    const checkCart = () => {
+      const cartData = localStorage.getItem('cartItems');
+      if (cartData) {
+        const cart = JSON.parse(cartData);
+        const count = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
+        setCartCount(count);
+      } else {
+        setCartCount(0);
+      }
+    };
+
+    const checkActiveOrder = () => {
+      const ordersData = localStorage.getItem('allOrders');
+      if (ordersData) {
+        const orders = JSON.parse(ordersData);
+        // Find the most recent order that is NOT completed
+        const activeOrder = orders.find((o: any) => o.status !== 'completed');
+        if (activeOrder) {
+          setActiveOrderId(activeOrder.id.replace('#', ''));
+        } else {
+          setActiveOrderId(null);
+        }
+      }
+    };
+
     checkAuth();
+    checkCart();
+    checkActiveOrder();
 
     // Listen for custom auth events
     window.addEventListener("authChange", checkAuth);
-    // Also listen for storage events in case of cross-tab changes (though simpler logic here mostly relies on same-tab)
-    window.addEventListener("storage", checkAuth);
+    window.addEventListener("cartUpdate", checkCart);
+    window.addEventListener("orderUpdate", checkActiveOrder);
+    // Also listen for storage events in case of cross-tab changes
+    window.addEventListener("storage", () => {
+      checkAuth();
+      checkCart();
+      checkActiveOrder();
+    });
 
     return () => {
       window.removeEventListener("authChange", checkAuth);
-      window.removeEventListener("storage", checkAuth);
+      window.removeEventListener("cartUpdate", checkCart);
+      window.removeEventListener("orderUpdate", checkActiveOrder);
     };
   }, []);
 
@@ -39,24 +108,14 @@ export function Navbar() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="bg-primary text-white p-1 rounded-lg">
-            {/* Using a simple Shield/Fire icon placeholder or similar */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-5 w-5 fill-current"
-            >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-            </svg>
-          </div>
-          <span className="text-xl font-bold text-gray-900">SmartBite</span>
+          <Image
+            src="/images/logo.png"
+            alt="SmartBite Logo"
+            width={56}
+            height={56}
+            className="rounded-full object-contain"
+          />
+          <span className="text-2xl font-bold text-primary">SmartBite</span>
         </Link>
 
         {/* Navigation Links */}
@@ -74,25 +133,81 @@ export function Navbar() {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="text-gray-600 hover:text-primary">
-            <ShoppingCart className="h-5 w-5" />
-          </Button>
-          {isLoggedIn ? (
-            <div className="flex items-center gap-2">
-              <Link href="/profile">
-                <Button variant="ghost" className="text-sm font-medium text-gray-600 hover:text-primary gap-2">
-                  <User className="h-5 w-5" />
-                  Profile
+          {isLoggedIn && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-600 hover:text-primary relative"
+                title="My Orders"
+                onClick={() => {
+                  if (activeOrderId) {
+                    router.push(`/order/${activeOrderId}`);
+                  } else {
+                    router.push('/profile/history');
+                  }
+                }}
+              >
+                <ReceiptText className="h-5 w-5" />
+                {activeOrderId && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500 border border-white"></span>
+                )}
+              </Button>
+
+              <Link href="/cart" className="relative">
+                <Button variant="ghost" size="icon" className="text-gray-600 hover:text-primary">
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartCount > 0 && (
+                    <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                      {cartCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="text-sm font-medium text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-              >
-                Log out
-              </Button>
-            </div>
+            </>
+          )}
+          {isLoggedIn ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 p-0 rounded-full border border-gray-200 bg-gray-50 focus-visible:ring-0">
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-orange-100 text-orange-600 font-bold text-sm">
+                    {getInitials(userName)}
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none text-gray-900">{userName}</p>
+                    <p className="text-xs leading-none text-gray-500">SmartBite User</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="cursor-pointer flex items-center">
+                    <User className="mr-2 h-4 w-4 text-gray-500" />
+                    <span>My Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile/history" className="cursor-pointer flex items-center">
+                    <History className="mr-2 h-4 w-4 text-gray-500" />
+                    <span>History & Calories</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile/settings" className="cursor-pointer flex items-center">
+                    <Settings className="mr-2 h-4 w-4 text-gray-500" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <>
               <Link href="/auth/login">

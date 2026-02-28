@@ -1,5 +1,6 @@
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export function Footer() {
     return (
@@ -8,27 +9,18 @@ export function Footer() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
                     {/* Brand */}
                     <div>
-                        <div className="flex items-center gap-2 mb-4 text-white">
-                            <div className="bg-primary text-white p-1 rounded-lg">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="fill-current"
-                                >
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-                                </svg>
-                            </div>
-                            <span className="text-xl font-bold">SmartBite</span>
+                        <div className="flex items-center gap-3 mb-4 text-white">
+                            <Image
+                                src="/images/logo.png"
+                                alt="SmartBite Logo"
+                                width={56}
+                                height={56}
+                                className="rounded-full object-contain bg-white"
+                            />
+                            <span className="text-2xl font-bold text-primary">SmartBite</span>
                         </div>
                         <p className="text-sm mb-6">
-                            Smart food ordering platform with AI nutrition advice, helping you eat healthy every day.
+                            Smart food ordering platform with AI nutrition advice, helping you eat well every day.
                         </p>
                         <div className="flex gap-4">
                             <Link href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
@@ -86,7 +78,7 @@ export function Footer() {
                 </div>
 
                 <div className="border-t border-gray-800 pt-8 text-center text-sm">
-                    <p>© 2024 SmartBite. All rights reserved.</p>
+                    <p>© 2026 SmartBite. All rights reserved.</p>
                 </div>
             </div>
         </footer>

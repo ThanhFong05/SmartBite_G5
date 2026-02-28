@@ -16,14 +16,34 @@ export default function RegisterPage() {
         setShowPassword(!showPassword);
     };
 
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [address, setAddress] = useState("");
+    const [birthdate, setBirthdate] = useState("");
+    const [password, setPassword] = useState("");
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // Handle registration logic here
         console.log("Form submitted");
-        // Simulate registration success
-        localStorage.setItem("user", JSON.stringify({ name: "User" }));
-        window.dispatchEvent(new Event("authChange"));
-        router.push("/");
+
+        // Save to registered users list to simulate database
+        const existingStr = localStorage.getItem("registeredUsers");
+        const registeredUsers = existingStr ? JSON.parse(existingStr) : {};
+        const normalizedEmail = email.trim().toLowerCase();
+
+        registeredUsers[normalizedEmail] = {
+            name: name.trim() || "User",
+            email: normalizedEmail,
+            phone: phone.trim(),
+            address: address.trim(),
+            birthdate: birthdate.trim(),
+            password: password
+        };
+        localStorage.setItem("registeredUsers", JSON.stringify(registeredUsers));
+
+        router.push("/auth/login");
     };
 
     return (
@@ -82,7 +102,10 @@ export default function RegisterPage() {
             {/* Right Section - Form */}
             <div className="flex w-full flex-col justify-center bg-white p-8 lg:w-1/2 lg:p-12 xl:p-24">
                 <div className="mx-auto w-full max-w-md space-y-8">
-                    <div className="space-y-2">
+                    <div className="space-y-2 relative">
+                        <Link href="/" className="absolute right-0 top-0 text-sm font-medium text-gray-500 hover:text-orange-500 transition-colors">
+                            ← Back to Home
+                        </Link>
                         <h2 className="text-3xl font-bold text-gray-900">Create new account</h2>
                         <p className="text-gray-500">Start your healthy living journey today.</p>
                     </div>
@@ -92,7 +115,13 @@ export default function RegisterPage() {
                             <label className="text-sm font-medium text-gray-700">Full Name</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                                <Input placeholder="Your Full Name" className="pl-10 h-12 bg-gray-50 border-gray-200" required />
+                                <Input
+                                    placeholder="Your Full Name"
+                                    className="pl-10 h-12 bg-gray-50 border-gray-200"
+                                    required
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                />
                             </div>
                         </div>
 
@@ -100,7 +129,14 @@ export default function RegisterPage() {
                             <label className="text-sm font-medium text-gray-700">Email</label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                                <Input type="email" placeholder="Name@gmail.com" className="pl-10 h-12 bg-gray-50 border-gray-200" required />
+                                <Input
+                                    type="email"
+                                    placeholder="Name@gmail.com"
+                                    className="pl-10 h-12 bg-gray-50 border-gray-200"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
                             </div>
                         </div>
 
@@ -108,7 +144,40 @@ export default function RegisterPage() {
                             <label className="text-sm font-medium text-gray-700">Phone number</label>
                             <div className="relative">
                                 <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                                <Input type="tel" placeholder="Your phone number" className="pl-10 h-12 bg-gray-50 border-gray-200" />
+                                <Input
+                                    type="tel"
+                                    placeholder="Your phone number"
+                                    className="pl-10 h-12 bg-gray-50 border-gray-200"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Address</label>
+                            <div className="relative">
+                                <Input
+                                    type="text"
+                                    placeholder="Your full address"
+                                    className="h-12 bg-gray-50 border-gray-200"
+                                    required
+                                    value={address}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Birthdate</label>
+                            <div className="relative">
+                                <Input
+                                    type="date"
+                                    className="h-12 bg-gray-50 border-gray-200"
+                                    required
+                                    value={birthdate}
+                                    onChange={(e) => setBirthdate(e.target.value)}
+                                />
                             </div>
                         </div>
 
@@ -121,6 +190,8 @@ export default function RegisterPage() {
                                     placeholder="••••••••"
                                     className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200"
                                     required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     pattern=".{8,}"
                                     title="Password must be at least 8 characters"
                                 />
