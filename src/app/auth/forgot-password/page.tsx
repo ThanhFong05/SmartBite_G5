@@ -20,15 +20,6 @@ export default function ForgotPasswordPage() {
 
         const normalizedEmail = email.trim().toLowerCase();
 
-        // Ensure user actually exists first
-        const registeredUsersStr = localStorage.getItem("registeredUsers");
-        const registeredUsers = registeredUsersStr ? JSON.parse(registeredUsersStr) : {};
-        if (!registeredUsers[normalizedEmail]) {
-            setError("This email is not registered in the system.");
-            setIsLoading(false);
-            return;
-        }
-
         try {
             const res = await fetch("/api/auth/forgot-password", {
                 method: "POST",
@@ -38,11 +29,15 @@ export default function ForgotPasswordPage() {
 
             const data = await res.json();
 
-            if (res.ok && data.success) {
+            if (res.ok) {
                 // Pass email to reset page via query param for convenience
                 router.push(`/auth/reset-password?email=${encodeURIComponent(normalizedEmail)}`);
             } else {
-                setError(data.error || "Failed to send OTP. Please try again later.");
+                if (res.status === 404) {
+                    setError("This email is not registered in our system.");
+                } else {
+                    setError(data.error || "Failed to send OTP. Please try again later.");
+                }
             }
         } catch (err) {
             setError("An error occurred. Please try again.");

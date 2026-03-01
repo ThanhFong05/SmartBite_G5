@@ -54,8 +54,8 @@ export function RelatedDishes({ currentDishId }: { currentDishId?: string }) {
         <section className="py-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">You Might Also Like</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {relatedDishes.map((dish, index) => (
-                    <Card key={index} className="overflow-hidden bg-white hover:shadow-lg transition-all duration-300 border-gray-100 group cursor-pointer">
+                {relatedDishes.map((dish: any, index) => (
+                    <Card key={index} className={`overflow-hidden bg-white hover:shadow-lg transition-all duration-300 border-gray-100 group cursor-pointer ${dish.foodstatus === "Out of Stock" ? "grayscale opacity-60" : ""}`}>
                         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                             <div className="absolute inset-0 bg-gray-200 animate-pulse" /> {/* Placeholder pending real images */}
                             {/*  <img 

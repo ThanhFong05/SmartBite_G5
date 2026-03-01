@@ -13,6 +13,7 @@ import {
     ArrowRight
 } from "lucide-react"
 import Link from "next/link"
+import { ReviewDialog } from "@/components/shared/ReviewDialog"
 
 export default function OrderHistoryPage() {
     const [activeTab, setActiveTab] = useState("All")
@@ -21,49 +22,52 @@ export default function OrderHistoryPage() {
 
     useEffect(() => {
         setIsMounted(true)
-        const allOrders = JSON.parse(localStorage.getItem('allOrders') || '[]')
+        const fetchHistory = async () => {
+            const userStr = localStorage.getItem("user");
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    const userId = user.UserId || user.userid || user.id;
+                    if (userId) {
+                        const res = await fetch(`/api/orders?userid=${userId}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            const allOrders = data.orders || [];
 
-        // Transform real orders into the shaped data needed for the history page
-        const formattedOrders = allOrders.map((o: any) => ({
-            id: o.id,
-            title: o.items || "Order",
-            time: o.time || "--:--",
-            price: o.price || "0 đ",
-            calories: o.cartDetails ? `${o.cartDetails.reduce((sum: number, item: any) => sum + ((parseInt(item.calories) || 0) * (item.quantity || 1)), 0)} kcal` : "-- kcal",
-            protein: "--g",
-            status: o.status === 'completed' ? 'Completed' : (o.status === 'delivering' ? 'Delivering' : 'Confirmed'),
-            type: "general",
-            icon: Pizza, // fallback icon
-            originalOrder: o
-        }))
-        setHistory(formattedOrders)
+                            const statusMap: Record<number, string> = {
+                                1: 'Confirmed', // Pending in DB is confirmed for user
+                                2: 'Confirmed',
+                                3: 'Preparing',
+                                4: 'Delivering',
+                                5: 'Completed'
+                            };
 
-        // Listen for storage events across tabs to stay synced
-        const checkStatus = () => {
-            const updatedOrders = JSON.parse(localStorage.getItem('allOrders') || '[]')
-            const formattedUpdated = updatedOrders.map((o: any) => ({
-                id: o.id,
-                title: o.items || "Order",
-                time: o.time || "--:--",
-                price: o.price || "0 đ",
-                calories: o.cartDetails ? `${o.cartDetails.reduce((sum: number, item: any) => sum + ((parseInt(item.calories) || 0) * (item.quantity || 1)), 0)} kcal` : "-- kcal",
-                protein: "--g",
-                status: o.status === 'completed' ? 'Completed' : (o.status === 'delivering' ? 'Delivering' : 'Confirmed'),
-                type: "general",
-                icon: Pizza,
-                originalOrder: o
-            }))
-            setHistory(formattedUpdated)
-        }
-        window.addEventListener('storage', checkStatus)
-        window.addEventListener('orderUpdate', checkStatus)
-        const interval = setInterval(checkStatus, 2000)
+                            const formatted = allOrders.map((o: any) => ({
+                                id: o.orderid,
+                                title: (o.orderitems || []).map((oi: any) => oi.fooditems?.foodname).filter(Boolean).join(", ") || "Order",
+                                time: o.ordertime ? new Date(o.ordertime).toISOString() : "",
+                                displayTime: o.ordertime ? new Date(o.ordertime).toLocaleString() : "",
+                                price: new Intl.NumberFormat('vi-VN').format(o.foodamount + o.shippingfee) + ' đ',
+                                calories: o.orderitems ? `${o.orderitems.reduce((sum: number, oi: any) => sum + ((oi.fooditems?.calories || 0) * (oi.quantity || 1)), 0)} kcal` : "-- kcal",
+                                protein: "--g",
+                                status: statusMap[Number(o.orderstatus)] || 'Confirmed',
+                                type: "general",
+                                icon: Pizza,
+                                originalOrder: o
+                            }));
+                            setHistory(formatted);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Lỗi khi fetch history:", e);
+                }
+            }
+        };
 
-        return () => {
-            window.removeEventListener('storage', checkStatus)
-            window.removeEventListener('orderUpdate', checkStatus)
-            clearInterval(interval)
-        }
+        fetchHistory();
+        const interval = setInterval(fetchHistory, 5000);
+
+        return () => clearInterval(interval);
     }, [])
 
     if (!isMounted) return null
@@ -141,7 +145,7 @@ export default function OrderHistoryPage() {
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-gray-900 text-lg">{order.title}</h3>
-                                                <p className="text-sm text-gray-500">{order.time}</p>
+                                                <p className="text-sm text-gray-500">{order.displayTime || order.time}</p>
                                             </div>
                                         </div>
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === 'Completed' || order.status === 'Completed' ? 'bg-green-100 text-green-700' :
@@ -167,10 +171,21 @@ export default function OrderHistoryPage() {
                                                 <p className="font-bold text-gray-900">{order.protein}</p>
                                             </div>
                                         </div>
-                                        <div className="flex gap-3 w-full sm:w-auto">
-                                            <Button variant="outline" className="flex-1 sm:flex-none rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50">
-                                                Details
-                                            </Button>
+                                        <div className="flex gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+                                            {order.status === 'Completed' && (
+                                                <div className="flex-1 sm:flex-none">
+                                                    <ReviewDialog
+                                                        orderId={order.id}
+                                                        type="order"
+                                                        orderItems={order.originalOrder?.orderitems || []}
+                                                    />
+                                                </div>
+                                            )}
+                                            <Link href={`/order/${order.id}`} className="flex-1 sm:flex-none">
+                                                <Button variant="outline" className="w-full rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50">
+                                                    Details
+                                                </Button>
+                                            </Link>
                                             <Button className="flex-1 sm:flex-none rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold">
                                                 Reorder
                                             </Button>

@@ -10,7 +10,9 @@ import { RelatedDishes } from "@/components/sections/dish/related-dishes"
 import { Separator } from "@/components/ui/separator"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
-import { ArrowLeft } from "lucide-react"
+import { DishReviews } from "@/components/sections/dish/dish-reviews"
+import { ReviewDialog } from "@/components/shared/ReviewDialog"
+import { ArrowLeft, Star } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 
@@ -21,13 +23,16 @@ export default function DishPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState("")
     const [selectedExtras, setSelectedExtras] = useState<Record<number, boolean>>({})
+    const [eligibility, setEligibility] = useState<{ eligible: boolean, orderId: string | null, orderItems: any[] }>({ eligible: false, orderId: null, orderItems: [] })
+    const [isMounted, setIsMounted] = useState(false)
+    const [reviewRefreshKey, setReviewRefreshKey] = useState(0)
 
     const handleToggleExtra = (idx: number) => {
         setSelectedExtras(prev => ({ ...prev, [idx]: !prev[idx] }))
     }
 
     const currentTotalPrice = useMemo(() => {
-        if (!dish) return "";
+        if (!dish || !isMounted) return dish?.price || "";
         let extraPrice = 0;
         if (dish.extras) {
             dish.extras.forEach((extra: any, idx: number) => {
@@ -40,7 +45,11 @@ export default function DishPage() {
         const basePrice = parseInt((dish.price || "0").replace(/[^\d]/g, ''), 10) || 0;
         const total = basePrice + extraPrice;
         return total > 0 ? total.toLocaleString('vi-VN') + ' đ' : dish.price;
-    }, [dish, selectedExtras]);
+    }, [dish, selectedExtras, isMounted]);
+
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
 
     useEffect(() => {
         if (!id) return;
@@ -61,8 +70,38 @@ export default function DishPage() {
             }
         };
 
-        fetchDish();
-    }, [id]);
+        const checkEligibility = async () => {
+            try {
+                const res = await fetch(`/api/reviews?action=check-eligibility&foodid=${dish?.foodid || id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.eligible) {
+                        setEligibility({
+                            eligible: true,
+                            orderId: data.orderId,
+                            orderItems: data.orderItems?.map((oi: any) => ({
+                                foodid: oi.foodid,
+                                quantity: oi.quantity,
+                                fooditems: {
+                                    foodname: oi.fooditems?.foodname,
+                                    foodimageurl: oi.fooditems?.foodimageurl
+                                }
+                            })) || []
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Eligibility check error:", err);
+            }
+        };
+
+        const fetchData = async () => {
+            await fetchDish();
+            await checkEligibility();
+        };
+
+        fetchData();
+    }, [id, reviewRefreshKey]);
 
     if (isLoading) {
         return (
@@ -76,12 +115,12 @@ export default function DishPage() {
         )
     }
 
-    if (error || !dish) {
+    if (error || !dish || dish.foodstatus === 'Unavailable') {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Navbar />
                 <main className="flex-grow flex flex-col items-center justify-center gap-4">
-                    <h2 className="text-2xl font-bold text-gray-900">Dish Not Found</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">{dish?.foodstatus === 'Unavailable' ? 'Món ăn đã ngừng kinh doanh' : 'Dish Not Found'}</h2>
                     <Link href="/menu">
                         <span className="text-orange-500 hover:underline">Back to Menu</span>
                     </Link>
@@ -109,7 +148,12 @@ export default function DishPage() {
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <Navbar />
 
-            <main className="flex-grow container mx-auto px-4 py-8">
+            <main className={`flex-grow container mx-auto px-4 py-8 transition-all duration-500 ${dish.foodstatus === "Out of Stock" ? "grayscale opacity-60 pointer-events-none" : ""}`}>
+                {dish.foodstatus === "Out of Stock" && (
+                    <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg mb-6 text-sm font-medium border border-red-100 flex items-center justify-center">
+                        Thông báo: Món ăn này hiện đang tạm hết hàng. Quý khách vui lòng chọn món khác.
+                    </div>
+                )}
                 {/* Breadcrumb / Back button */}
                 <div className="mb-6">
                     <Link href="/menu" className="inline-flex items-center text-sm text-gray-500 hover:text-primary transition-colors">
@@ -131,7 +175,7 @@ export default function DishPage() {
                             price={dish.price}
                             originalPrice={null} // Not in new model currently
                             rating={dish.rating}
-                            reviewCount={0} // Not in new model
+                            reviewCount={dish.reviewCount || 0}
                             time={dish.time}
                             calories={dish.calories}
                             description={dish.desc} // mapped from desc
@@ -157,6 +201,39 @@ export default function DishPage() {
                 <div className="md:hidden">
                     <AddToCart price={currentTotalPrice} dish={dish} selectedExtras={selectedExtras} />
                 </div>
+
+                <Separator className="my-12" />
+
+                {isMounted && eligibility.eligible && (
+                    <div className="mb-12 bg-gradient-to-r from-orange-50 to-white p-8 rounded-[40px] border border-orange-100 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-md">
+                                <Star className="w-8 h-8 text-orange-400 fill-orange-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">Món ăn này rất tuyệt, đúng không?</h3>
+                                <p className="text-gray-500">Bạn đã thưởng thức món này, hãy chia sẻ cảm nhận với mọi người nhé!</p>
+                            </div>
+                        </div>
+                        <ReviewDialog
+                            orderId={eligibility.orderId!}
+                            type="dish"
+                            orderItems={eligibility.orderItems}
+                            triggerElement={
+                                <div className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-2xl shadow-lg shadow-orange-100 transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+                                    <Star className="w-5 h-5 fill-white" />
+                                    Viết đánh giá ngay
+                                </div>
+                            }
+                            onReviewSubmitted={() => {
+                                setEligibility({ eligible: false, orderId: null, orderItems: [] });
+                                setReviewRefreshKey(prev => prev + 1);
+                            }}
+                        />
+                    </div>
+                )}
+
+                <DishReviews foodId={dish.foodid} refreshKey={reviewRefreshKey} />
 
                 <Separator className="my-12" />
 

@@ -23,8 +23,11 @@ export function AddToCart({ price, dish, selectedExtras }: AddToCartProps) {
         setQuantity(quantity + 1)
     }
 
-    const handleAddToCart = () => {
-        if (!dish) return;
+    const handleAddToCart = async () => {
+        if (!dish || dish.foodstatus === "Out of Stock" || dish.foodstatus === "Unavailable") {
+            alert("Rất tiếc, món ăn này hiện không khả dụng.");
+            return;
+        }
 
         const userStr = localStorage.getItem("user");
         if (!userStr) {
@@ -33,60 +36,51 @@ export function AddToCart({ price, dish, selectedExtras }: AddToCartProps) {
             return;
         }
 
-        const cartData = localStorage.getItem('cartItems');
-        let cart = cartData ? JSON.parse(cartData) : [];
+        const user = JSON.parse(userStr);
+        const userId = user.userid || user.UserId || user.id;
+
+        if (!userId) {
+            alert("Vui lòng Đăng nhập lại để cập nhật thông tin tài khoản.");
+            return;
+        }
 
         // Determine which extras were selected
         const selectedExtrasArray = dish.extras
             ? dish.extras.filter((_: any, idx: number) => selectedExtras?.[idx])
             : [];
 
-        // Calculate total extra price
-        let extraPrice = 0;
-        selectedExtrasArray.forEach((extra: any) => {
-            const num = parseInt(extra.price.replace(/[^\d]/g, ''), 10) || 0;
-            extraPrice += num;
-        });
+        // Map to topping IDs from DB
+        const toppingIds = selectedExtrasArray.map((e: any) => e.id);
 
-        const basePrice = parseInt((dish.price || "0").replace(/[^\d]/g, ''), 10) || 0;
-        const totalPrice = basePrice + extraPrice;
-        const formattedTotalPrice = totalPrice.toLocaleString('vi-VN') + ' đ';
-
-        // Append extras to desc for cart display
-        let newDesc = dish.desc || "";
-        if (selectedExtrasArray.length > 0) {
-            const extraNames = selectedExtrasArray.map((e: any) => e.name).join(", ");
-            newDesc = newDesc ? `${newDesc} (Thêm: ${extraNames})` : `Thêm: ${extraNames}`;
-        }
-
-        // Differentiate cart items by their extra combinations
-        const sortedExtraIndices = Object.keys(selectedExtras || {})
-            .filter(k => selectedExtras![Number(k)])
-            .sort()
-            .join('-');
-
-        const cartItemId = sortedExtraIndices ? `${dish.id}-${sortedExtraIndices}` : dish.id;
-
-        const existingItemIndex = cart.findIndex((item: any) => item.id === cartItemId);
-
-        if (existingItemIndex > -1) {
-            cart[existingItemIndex].quantity += quantity;
-        } else {
-            cart.push({
-                ...dish,
-                id: cartItemId,
-                price: formattedTotalPrice,
-                desc: newDesc,
-                quantity: quantity,
-                extras: selectedExtrasArray
+        try {
+            const res = await fetch('/api/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userId, // lowercase key value
+                    foodId: dish.id,
+                    quantity,
+                    selectedExtras: toppingIds,
+                    note: ""
+                })
             });
+
+            if (res.ok) {
+                window.dispatchEvent(new Event('cartUpdate'));
+                alert(`Đã thêm ${quantity} phần ${dish.title} vào giỏ hàng`);
+            } else {
+                const errorData = await res.json();
+                // Nếu lỗi liên quan đến foreign key, nhắc nhở đăng nhập lại
+                if (errorData.error?.includes("foreign key constraint")) {
+                    alert("Lỗi: Phiên đăng nhập chưa đồng bộ. Hệ thống đang tự động sửa lỗi, bạn vui lòng THỬ LẠI hoặc F5 trang.");
+                } else {
+                    alert(`Lỗi: ${errorData.error || "Không thể thêm vào giỏ hàng"}`);
+                }
+            }
+        } catch (error) {
+            console.error("Cart Error:", error);
+            alert("Đã xảy ra lỗi khi kết nối với máy chủ.");
         }
-
-        localStorage.setItem('cartItems', JSON.stringify(cart));
-        window.dispatchEvent(new Event('cartUpdate'));
-
-        // Optional: show a small toast or notification here
-        alert(`Đã thêm ${quantity} phần ${dish.title} vào giỏ hàng`);
     }
 
     return (
@@ -108,9 +102,22 @@ export function AddToCart({ price, dish, selectedExtras }: AddToCartProps) {
                     </button>
                 </div>
 
-                <Button onClick={handleAddToCart} className="flex-1 h-12 text-base font-semibold bg-primary hover:bg-orange-600 text-white shadow-lg shadow-orange-200 rounded-xl">
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Add to Cart {price ? `• ${price}` : ''}
+                <Button
+                    onClick={handleAddToCart}
+                    disabled={dish?.foodstatus === "Out of Stock"}
+                    className={`flex-1 h-12 text-base font-semibold transition-all rounded-xl shadow-lg 
+                        ${dish?.foodstatus === "Out of Stock"
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed shadow-none"
+                            : "bg-primary hover:bg-orange-600 text-white shadow-orange-200"}`}
+                >
+                    {dish?.foodstatus === "Out of Stock" ? (
+                        "Đã hết món"
+                    ) : (
+                        <>
+                            <ShoppingCart className="w-5 h-5 mr-2" />
+                            Add to Cart {price ? `• ${price}` : ''}
+                        </>
+                    )}
                 </Button>
 
                 <div className="w-12 h-12 flex items-center justify-center bg-orange-50 rounded-xl text-orange-500 cursor-pointer hover:bg-orange-100 transition-colors">

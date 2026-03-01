@@ -1,13 +1,38 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { otpStorage } from '@/lib/otpStore';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(req: Request) {
     try {
+        const supabase = await createClient();
         const { email } = await req.json();
 
         if (!email) {
             return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
+        }
+
+        // Kiểm tra cấu hình Email
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            console.error('Missing EMAIL_USER or EMAIL_PASS environment variables');
+            return NextResponse.json({
+                success: false,
+                error: 'Email service is not configured on the server. Please check environment variables.'
+            }, { status: 500 });
+        }
+
+        // 1. Kiểm tra xem email có tồn tại trong hệ thống không
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('userid')
+            .eq('email', email.toLowerCase())
+            .single();
+
+        if (userError || !user) {
+            return NextResponse.json({
+                success: false,
+                error: 'This email is not registered in our system.'
+            }, { status: 404 });
         }
 
         // Generate a 6-digit OTP
@@ -16,7 +41,8 @@ export async function POST(req: Request) {
         // Store OTP with an expiration of 10 minutes
         otpStorage[email] = {
             otp,
-            expires: Date.now() + 10 * 60 * 1000
+            expires: Date.now() + 10 * 60 * 1000,
+            userid: user.userid // Lưu ID để reset mật khẩu chính xác
         };
 
         // Configure nodemailer transporter using environment variables
@@ -59,8 +85,12 @@ export async function POST(req: Request) {
         await transporter.sendMail(mailOptions);
 
         return NextResponse.json({ success: true, message: 'OTP sent successfully' });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error sending OTP email:', error);
-        return NextResponse.json({ success: false, error: 'Failed to send OTP email' }, { status: 500 });
+        return NextResponse.json({
+            success: false,
+            error: 'Failed to send OTP email: ' + (error.message || 'Unknown error'),
+            details: error.code // Trả về mã lỗi SMTP nếu có
+        }, { status: 500 });
     }
 }

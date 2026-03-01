@@ -1,6 +1,7 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 
 export async function POST(req: NextRequest) {
     try {
@@ -14,38 +15,88 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const supabase = await createClient();
 
-        // Format history for Gemini
-        // Allow system instruction/context via the first message or a system prompt
-        // Simple implementation: send the last message for now, or build chat history string
-        // Better implementation for chat: Multi-turn chat
+        // Lấy danh sách món ăn từ database để làm context
+        const { data: dishes, error: dishesError } = await supabase
+            .from('fooditems')
+            .select('foodname, descriptions, price, calories, preptime, allergyinfo, ingredients')
+            .eq('foodstatus', 'Available');
 
-        // Construct history from messages excluding the last one (which is the new user prompt)
-        const history = messages.slice(0, -1).map((m: any) => ({
-            role: m.role === "user" ? "user" : "model",
-            parts: [{ text: m.content }],
-        }));
+        if (dishesError) {
+            console.error("Error fetching dishes for chat context:", dishesError);
+        }
 
-        const lastMessage = messages[messages.length - 1];
+        const menuContext = (dishes || []).map(dish => {
+            let metadata = { ingredients: [] };
+            try {
+                if (dish.ingredients && typeof dish.ingredients === 'string') {
+                    // Try parsing if it looks like JSON
+                    if (dish.ingredients.startsWith('{') || dish.ingredients.startsWith('[')) {
+                        metadata = JSON.parse(dish.ingredients);
+                    }
+                } else if (typeof dish.ingredients === 'object' && dish.ingredients !== null) {
+                    metadata = dish.ingredients;
+                }
+            } catch (e) {
+                console.warn(`Error parsing ingredients for dish ${dish.foodname}:`, e);
+            }
 
-        const chat = model.startChat({
-            history: history,
-            generationConfig: {
-                maxOutputTokens: 1000,
+            const ingredientsList = Array.isArray(metadata?.ingredients)
+                ? metadata.ingredients.map((i: any) => i.name || i).join(', ')
+                : (typeof dish.ingredients === 'string' ? dish.ingredients : 'N/A');
+
+            return `- ${dish.foodname}: ${dish.descriptions}. Giá: ${(dish.price || 0).toLocaleString('vi-VN')}đ, Calo: ${dish.calories || 0}kcal, Thời gian: ${dish.preptime || 0}p. Thành phần: ${ingredientsList}. Dị ứng: ${dish.allergyinfo || 'N/A'}`;
+        }).join('\n') || "Hiện tại không có món ăn nào trong thực đơn.";
+
+        console.log(`Successfully built menu context with ${dishes?.length || 0} dishes.`);
+
+        // Gọi Supabase Edge Function bằng fetch trực tiếp để dễ debug
+        const functionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/smartbite-ai`;
+        const edgeResponse = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             },
+            body: JSON.stringify({
+                messages,
+                menuContext
+            })
         });
 
-        const result = await chat.sendMessage(lastMessage.content);
-        const response = await result.response;
-        const text = response.text();
+        const responseText = await edgeResponse.text();
+        let edgeData: any = null;
+        try {
+            edgeData = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Non-JSON response from Edge Function:", responseText);
+        }
 
-        return NextResponse.json({ role: "assistant", content: text });
-    } catch (error) {
+        if (!edgeResponse.ok) {
+            console.error("Edge Function Error Status:", edgeResponse.status, responseText);
+            return NextResponse.json(
+                {
+                    error: `Lỗi Edge Function (${edgeResponse.status})`,
+                    details: edgeData?.error || responseText || "Không thể đọc nội dung lỗi từ Function."
+                },
+                { status: edgeResponse.status }
+            );
+        }
+
+        return NextResponse.json({
+            role: "assistant",
+            content: edgeData?.content || "Không có phản hồi từ AI."
+        });
+    } catch (error: any) {
         console.error("Error in chat API:", error);
         return NextResponse.json(
-            { error: "Failed to process request" },
+            {
+                error: error.message || "Lỗi không xác định",
+                details: error.stack,
+                status: "failed"
+            },
             { status: 500 }
         );
     }

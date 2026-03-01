@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function CartPage() {
+    const router = useRouter()
     const [cartItems, setCartItems] = useState<any[]>([])
     const [isMounted, setIsMounted] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState("momo")
@@ -24,56 +26,133 @@ export default function CartPage() {
 
     useEffect(() => {
         setIsMounted(true)
-        loadCart()
 
-        // Default address configuration from user profile
-        try {
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+            setIsLoggedIn(true);
+            const user = JSON.parse(userStr);
+            if (user.addressdelivery) {
+                setAddressTitle("Registered Address");
+                setAddressDetails(user.addressdelivery);
+            }
+            // Load cart from DB
+            const userId = user.userid || user.UserId || user.id;
+            loadCart(userId);
+        } else {
+            setIsLoggedIn(false);
+            setCartItems([]);
+        }
+
+        const handleCartUpdate = () => {
             const userStr = localStorage.getItem("user");
             if (userStr) {
-                setIsLoggedIn(true);
                 const user = JSON.parse(userStr);
-                if (user.address) {
-                    setAddressTitle("Registered Address");
-                    setAddressDetails(user.address);
-                }
-            } else {
-                setIsLoggedIn(false);
+                const userId = user.UserId || user.userid || user.id;
+                loadCart(userId);
             }
-        } catch (e) {
-            console.error("Failed to parse user profile: ", e);
-        }
+        };
 
-        window.addEventListener('cartUpdate', loadCart)
-        return () => window.removeEventListener('cartUpdate', loadCart)
+        window.addEventListener('cartUpdate', handleCartUpdate)
+        return () => window.removeEventListener('cartUpdate', handleCartUpdate)
     }, [])
 
-    const loadCart = () => {
-        const cartData = localStorage.getItem('cartItems')
-        if (cartData) {
-            setCartItems(JSON.parse(cartData))
+    const loadCart = async (userId: string) => {
+        try {
+            const res = await fetch(`/api/cart?userId=${userId}`);
+            if (res.ok) {
+                const data = await res.json();
+                const items = data.items || [];
+                // Map data from DB format to UI format
+                const formattedItems = items.map((item: any) => {
+                    const dish = item.fooditems;
+                    const toppings = item.cartitemtoppings?.map((t: any) => t.toppingoptions?.toppingname).filter(Boolean).join(", ");
+
+                    let extraPrice = 0;
+                    if (item.cartitemtoppings && Array.isArray(item.cartitemtoppings)) {
+                        extraPrice = item.cartitemtoppings.reduce((sum: number, t: any) => sum + (Number(t.toppingoptions?.price) || 0), 0);
+                    }
+
+                    const basePrice = Number(dish?.price) || 0;
+                    const finalPrice = basePrice + extraPrice;
+
+                    return {
+                        id: item.cartitemid, // Use cartitemid for UI operations
+                        foodId: dish?.foodid,
+                        title: dish?.foodname,
+                        image: dish?.foodimageurl,
+                        price: basePrice, // Chỉ hiển thị basePrice
+                        extraPrice: extraPrice, // Tách extraPrice để tính riêng
+                        quantity: Number(item.quantity) || 0,
+                        desc: (dish?.descriptions || "") + (toppings ? ` (Thêm: ${toppings})` : ""),
+                        calories: dish?.calories ? `${dish.calories} kcal` : "0 kcal",
+                        time: dish?.preptime ? `${dish.preptime}m` : "0m",
+                        category: dish?.categoryid
+                    };
+                });
+                setCartItems(formattedItems);
+                // Dispatch event to update Navbar count
+                window.dispatchEvent(new Event('cartUpdate'));
+            }
+        } catch (error) {
+            console.error("Failed to load cart from DB:", error);
+            setCartItems([]);
         }
     }
 
-    const saveCart = (items: any[]) => {
-        localStorage.setItem('cartItems', JSON.stringify(items))
-        setCartItems(items)
-        window.dispatchEvent(new Event('cartUpdate'))
-    }
+    const updateQuantity = async (itemId: string, delta: number) => {
+        const item = cartItems.find(i => i.id === itemId);
+        if (!item) return;
 
-    const updateQuantity = (id: string, delta: number) => {
-        const newCart = cartItems.map(item => {
-            if (item.id === id) {
-                const newQuantity = Math.max(0, item.quantity + delta)
-                return { ...item, quantity: newQuantity }
+        const newQuantity = item.quantity + delta;
+
+        // Nếu quantity < 0, giữ nguyên (không làm gì)
+        // Nếu quantity === 0, backend sẽ tự động xoá
+        if (newQuantity < 0) return;
+
+        try {
+            const res = await fetch(`/api/cart/${itemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity: newQuantity })
+            });
+
+            if (res.ok) {
+                const userStr = localStorage.getItem("user");
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    const userId = user.UserId || user.userid || user.id;
+                    loadCart(userId);
+                }
+            } else {
+                alert("Không thể cập nhật số lượng.");
             }
-            return item
-        }).filter(item => item.quantity > 0)
-
-        saveCart(newCart)
+        } catch (error) {
+            console.error("Update quantity error:", error);
+        }
     }
 
-    const clearCart = () => {
-        saveCart([])
+    const clearCart = async () => {
+        const userStr = localStorage.getItem("user");
+        if (!userStr) return;
+        const user = JSON.parse(userStr);
+        const userId = user.UserId || user.userid || user.id;
+
+        if (!confirm("Bạn có chắc chắn muốn xóa toàn bộ giỏ hàng?")) return;
+
+        try {
+            const res = await fetch(`/api/cart?userId=${userId}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                setCartItems([]);
+                window.dispatchEvent(new Event('cartUpdate'));
+            } else {
+                alert("Không thể xóa giỏ hàng.");
+            }
+        } catch (error) {
+            console.error("Failed to clear cart:", error);
+        }
     }
 
     // Parse price string like "85.000 đ" or "85000" to number
@@ -88,7 +167,7 @@ export default function CartPage() {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
     }
 
-    const subtotal = cartItems.reduce((sum, item) => sum + (parsePrice(item.price) * (item.quantity || 1)), 0)
+    const subtotal = cartItems.reduce((sum, item) => sum + (parsePrice(item.price) * (item.quantity || 1)) + parsePrice(item.extraPrice || 0), 0)
     const shippingFee = subtotal > 0 ? 15000 : 0
     const discount = subtotal >= 200000 ? 10000 : 0
     const total = subtotal + shippingFee - discount
@@ -171,7 +250,7 @@ export default function CartPage() {
                                                 <div className="flex justify-between items-start mb-1">
                                                     <h3 className="font-semibold text-lg text-gray-900 truncate pr-4">{item.title}</h3>
                                                     <div className="font-bold text-orange-500 whitespace-nowrap">
-                                                        {formatPrice(parsePrice(item.price))}
+                                                        {formatPrice(parsePrice(item.price) * (item.quantity || 1) + parsePrice(item.extraPrice || 0))}
                                                     </div>
                                                 </div>
                                                 <p className="text-sm text-gray-500 mb-3 line-clamp-2">{item.desc || item.title}</p>
@@ -221,51 +300,7 @@ export default function CartPage() {
                             )}
                         </div>
 
-                        {/* AI Suggestions Box */}
-                        {cartItems.length > 0 && (
-                            <div className="mt-8">
-                                <div className="flex justify-between items-center mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="w-5 h-5 text-orange-500" />
-                                        <h2 className="text-xl font-bold text-gray-900">AI Suggestions</h2>
-                                    </div>
-                                    <span className="text-xs text-gray-400">Based on your calorie goals</span>
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    {/* Mock suggestions */}
-                                    <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm relative group cursor-pointer hover:border-orange-200 transition-colors">
-                                        <div className="h-28 bg-gradient-to-br from-orange-100 to-orange-50 relative">
-                                            <img src="/images/bunchahanoi.jpg" className="w-full h-full object-cover mix-blend-multiply opacity-80" alt="Salad" />
-                                            <button className="absolute bottom-2 right-2 w-7 h-7 bg-orange-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-orange-600 transition-colors">
-                                                <Plus className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <div className="p-3">
-                                            <h4 className="font-semibold text-sm text-gray-900 truncate">Fruit Salad</h4>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <span className="text-xs text-gray-500">150 kcal</span>
-                                                <span className="text-sm font-bold text-orange-500">35k</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm relative group cursor-pointer hover:border-orange-200 transition-colors">
-                                        <div className="h-28 bg-gradient-to-br from-orange-100 to-orange-50 relative">
-                                            <img src="/images/bunchahanoi.jpg" className="w-full h-full object-cover mix-blend-multiply opacity-50" alt="Yogurt" />
-                                            <button className="absolute bottom-2 right-2 w-7 h-7 bg-orange-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-orange-600 transition-colors">
-                                                <Plus className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <div className="p-3">
-                                            <h4 className="font-semibold text-sm text-gray-900 truncate">Greek Yogurt</h4>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <span className="text-xs text-gray-500">110 kcal</span>
-                                                <span className="text-sm font-bold text-orange-500">45k</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        {/* AI Suggestions Box (Removed) */}
                     </div>
 
                     {/* Right Column - Payment & Summary */}
@@ -411,15 +446,47 @@ export default function CartPage() {
                                 </div>
                             </div>
 
-                            <Link href={isLoggedIn ? "/checkout/qr" : "/auth/login"} className="block w-full">
-                                <Button
-                                    className="w-full h-14 rounded-2xl text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-xl shadow-orange-200"
-                                    disabled={cartItems.length === 0}
-                                >
-                                    {isLoggedIn ? "Place Order Now" : "Login to Order"}
-                                    <ChevronRight className="w-5 h-5 ml-2" />
-                                </Button>
-                            </Link>
+                            <Button
+                                className="w-full h-14 rounded-2xl text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-xl shadow-orange-200"
+                                disabled={cartItems.length === 0 || !isLoggedIn}
+                                onClick={async () => {
+                                    if (!isLoggedIn) {
+                                        router.push("/auth/login");
+                                        return;
+                                    }
+
+                                    try {
+                                        const userStr = localStorage.getItem("user");
+                                        const user = JSON.parse(userStr || "{}");
+                                        const userId = user.userid || user.UserId || user.id;
+
+                                        const res = await fetch("/api/orders", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({
+                                                userid: userId,
+                                                shippingaddress: addressDetails,
+                                                totalprice: total,
+                                                paymentmethod: paymentMethod
+                                            })
+                                        });
+
+                                        const data = await res.json();
+                                        if (res.ok && data.orderId) {
+                                            // Chuyển sang trang QR kèm mã đơn hàng
+                                            router.push(`/checkout/qr?orderId=${data.orderId}`);
+                                        } else {
+                                            alert(`Lỗi đặt hàng: ${data.error || "Không rõ nguyên nhân"}`);
+                                        }
+                                    } catch (error) {
+                                        console.error("Place Order Error:", error);
+                                        alert("Đã xảy ra lỗi khi tạo đơn hàng.");
+                                    }
+                                }}
+                            >
+                                {isLoggedIn ? "Place Order Now" : "Login to Order"}
+                                <ChevronRight className="w-5 h-5 ml-2" />
+                            </Button>
                         </div>
                     </div>
                 </div>

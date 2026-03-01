@@ -11,7 +11,8 @@ import {
     Settings,
     LogOut,
     Search,
-    Bell
+    Bell,
+    Star
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -83,15 +84,38 @@ export default function AdminLayout({
                             <span className="font-medium">Order Management</span>
                         </Link>
 
-                        <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-all duration-200">
+                        <Link
+                            href="/admin/customers"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive('/admin/customers')
+                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
                             <Users className="h-5 w-5" />
                             <span className="font-medium">Customer Data</span>
-                        </a>
+                        </Link>
 
-                        <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-all duration-200">
+                        <Link
+                            href="/admin/reports"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive('/admin/reports')
+                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
                             <BarChart3 className="h-5 w-5" />
                             <span className="font-medium">Reports</span>
-                        </a>
+                        </Link>
+
+                        <Link
+                            href="/admin/reviews"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive('/admin/reviews')
+                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
+                            <Star className="h-5 w-5" />
+                            <span className="font-medium">Customer Reviews</span>
+                        </Link>
                     </nav>
                 </div>
 

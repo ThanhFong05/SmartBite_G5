@@ -8,14 +8,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import {
     Flame,
     Plus,
     Search,
     ChevronDown,
     UtensilsCrossed,
+    Beef,
     Coffee,
-    IceCream,
+    Cake,
     Leaf,
     Dumbbell,
     Zap,
@@ -24,7 +27,7 @@ import {
 
 // Types
 type BalanceType = "Balanced" | "Moderate" | "Indulgent";
-type CategoryType = "Food" | "Drinks" | "Dessert" | "All";
+type CategoryType = "Main Course" | "Drinks" | "Dessert" | "Healthy Food" | "All";
 
 interface MenuItem {
     id: string;
@@ -45,17 +48,26 @@ interface MenuItem {
     diets?: string[];
     allergies?: string[];
     flavors?: string[];
+    foodstatus?: string;
 }
 
-export default function MenuPage() {
+function MenuContent() {
     const [dishes, setDishes] = useState<MenuItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState<CategoryType>("All");
+    const searchParams = useSearchParams();
+    const categoryParam = searchParams.get("category");
+    const [selectedCategory, setSelectedCategory] = useState<CategoryType>((categoryParam as CategoryType) || "All");
     const [selectedBalances, setSelectedBalances] = useState<string[]>([]);
     const [selectedDiets, setSelectedDiets] = useState<string[]>([]);
     const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
     const [selectedFlavors, setSelectedFlavors] = useState<string[]>([]);
     const [isPersonalized, setIsPersonalized] = useState(false);
+
+    useEffect(() => {
+        if (categoryParam) {
+            setSelectedCategory(categoryParam as CategoryType);
+        }
+    }, [categoryParam]);
 
     useEffect(() => {
         fetchDishes();
@@ -94,7 +106,12 @@ export default function MenuPage() {
         const itemCategory = item.category || "Food";
         const itemBalance = item.dietaryBalance || "Balanced";
 
-        const matchCategory = selectedCategory === "All" || itemCategory === selectedCategory;
+        const matchCategory = selectedCategory === "All" ||
+            itemCategory === selectedCategory ||
+            (selectedCategory === "Main Course" && (itemCategory === "Food" || itemCategory === "main-course")) ||
+            (selectedCategory === "Drinks" && itemCategory === "drinks") ||
+            (selectedCategory === "Dessert" && itemCategory === "dessert") ||
+            (selectedCategory === "Healthy Food" && (itemCategory === "healthy-food" || itemCategory === "Healthy Food"));
         const matchBalance = selectedBalances.length === 0 || selectedBalances.includes(itemBalance);
 
         const matchDiets = selectedDiets.length === 0 || selectedDiets.some(d => item.diets?.includes(d));
@@ -108,6 +125,9 @@ export default function MenuPage() {
             const cals = parseInt((item.calories || "0").replace(/\D/g, '')) || 0;
             matchPersonalized = itemCategory === "Food" && cals > 0 && cals < 600;
         }
+
+        // Filter out Unavailable dishes
+        if (item.foodstatus === "Unavailable") return false;
 
         return matchCategory && matchBalance && matchDiets && matchAllergies && matchFlavors && matchPersonalized;
     });
@@ -169,14 +189,14 @@ export default function MenuPage() {
                             </button>
 
                             <button
-                                onClick={() => setSelectedCategory("Food")}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium ${selectedCategory === "Food"
+                                onClick={() => setSelectedCategory("Main Course")}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium ${selectedCategory === "Main Course"
                                     ? "bg-orange-500 text-white shadow-lg shadow-orange-200"
                                     : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                                     }`}
                             >
-                                <Leaf className="w-5 h-5" />
-                                <span>Food</span>
+                                <Beef className="w-5 h-5" />
+                                <span>Main Course</span>
                             </button>
 
                             <button
@@ -197,8 +217,19 @@ export default function MenuPage() {
                                     : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                                     }`}
                             >
-                                <IceCream className="w-5 h-5" />
+                                <Cake className="w-5 h-5" />
                                 <span>Dessert</span>
+                            </button>
+
+                            <button
+                                onClick={() => setSelectedCategory("Healthy Food")}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium ${selectedCategory === "Healthy Food"
+                                    ? "bg-orange-500 text-white shadow-lg shadow-orange-200"
+                                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                                    }`}
+                            >
+                                <Leaf className="w-5 h-5" />
+                                <span>Healthy Food</span>
                             </button>
                         </div>
                     </div>
@@ -335,7 +366,7 @@ export default function MenuPage() {
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredItems.map((item) => (
                                 <Link href={`/dishes/${item.id}`} key={item.id} className="block group h-full">
-                                    <Card className="h-full overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-300 bg-white rounded-[2rem] flex flex-col">
+                                    <Card className={`h-full overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-300 bg-white rounded-[2rem] flex flex-col ${item.foodstatus === "Out of Stock" ? "grayscale opacity-60 relative after:absolute after:inset-0 after:bg-white/20 after:z-10" : ""}`}>
                                         {/* Image Area */}
                                         <div className="relative aspect-[5/4] bg-gray-100 overflow-hidden">
                                             {item.image ? (
@@ -350,8 +381,13 @@ export default function MenuPage() {
                                                 </div>
                                             )}
 
-                                            {/* Top Tag - Using first AI tag if available */}
-                                            {item.aiReview?.tags && item.aiReview.tags.length > 0 && (
+                                            {/* Top Tag - Using status or first AI tag */}
+                                            {item.foodstatus === "Out of Stock" ? (
+                                                <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md z-10 uppercase tracking-wide">
+                                                    <Clock className="w-3 h-3 fill-current" />
+                                                    Hết hàng
+                                                </div>
+                                            ) : item.aiReview?.tags && item.aiReview.tags.length > 0 && (
                                                 <div className={`absolute top-4 left-4 bg-orange-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm z-10 uppercase tracking-wide`}>
                                                     <Zap className="w-3 h-3 fill-current" />
                                                     {item.aiReview.tags[0]}
@@ -393,7 +429,8 @@ export default function MenuPage() {
                                                 <Button
                                                     size="icon"
                                                     variant="secondary"
-                                                    className="h-10 w-10 rounded-full bg-white border border-gray-100 text-gray-400 hover:bg-black hover:text-white hover:border-black transition-all shadow-sm group-hover:shadow-md"
+                                                    disabled={item.foodstatus === "Out of Stock"}
+                                                    className={`h-10 w-10 rounded-full bg-white border border-gray-100 text-gray-400 hover:bg-black hover:text-white hover:border-black transition-all shadow-sm group-hover:shadow-md ${item.foodstatus === "Out of Stock" ? "opacity-50 cursor-not-allowed bg-gray-50" : ""}`}
                                                 >
                                                     <Plus className="w-5 h-5" />
                                                 </Button>
@@ -430,5 +467,17 @@ export default function MenuPage() {
             </div>
             <Footer />
         </div>
+    );
+}
+
+export default function MenuPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            </div>
+        }>
+            <MenuContent />
+        </Suspense>
     );
 }

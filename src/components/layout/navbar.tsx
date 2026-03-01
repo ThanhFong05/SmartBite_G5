@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { ShoppingCart, User, ReceiptText, History, LogOut, Settings } from "lucide-react"
+import { ShoppingCart, User, ReceiptText, History, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/utils/supabase/client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,13 +35,37 @@ export function Navbar() {
 
   useEffect(() => {
     // Check initial state
-    const checkAuth = () => {
-      const userStr = localStorage.getItem("user");
+    const checkAuth = async () => {
+      let userStr = localStorage.getItem("user");
+
+      if (!userStr) {
+        // Nếu không có trong local storage, thử kiểm tra session của Supabase (dành cho OAuth Google/Facebook)
+        try {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            // Lấy metadata từ OAuth
+            const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "User";
+            const newUserObj = {
+              userid: user.id,
+              fullname: name,
+              email: user.email,
+              role: 'user',
+            };
+            localStorage.setItem("user", JSON.stringify(newUserObj));
+            userStr = JSON.stringify(newUserObj);
+          }
+        } catch (e) {
+          console.error("Lỗi khi fetch Supabase User:", e);
+        }
+      }
+
       if (userStr) {
         setIsLoggedIn(true);
         try {
           const user = JSON.parse(userStr);
-          if (user.name) setUserName(user.name);
+          const name = user.fullname || user.FullName || user.name || "User";
+          setUserName(name);
         } catch (e) {
           // fallback
         }
@@ -49,27 +74,53 @@ export function Navbar() {
       }
     };
 
-    const checkCart = () => {
-      const cartData = localStorage.getItem('cartItems');
-      if (cartData) {
-        const cart = JSON.parse(cartData);
-        const count = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
-        setCartCount(count);
-      } else {
-        setCartCount(0);
+    const checkCart = async () => {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          const userId = user.UserId || user.userid || user.id;
+          if (userId) {
+            const res = await fetch(`/api/cart?userId=${userId}`);
+            if (res.ok) {
+              const data = await res.json();
+              const items = data.items || [];
+              // Ép kiểu quantity về số để tránh nối chuỗi
+              const count = items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
+
+              setCartCount(count);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error("Lỗi khi fetch giỏ hàng Navbar:", e);
+        }
       }
+      setCartCount(0);
     };
 
-    const checkActiveOrder = () => {
-      const ordersData = localStorage.getItem('allOrders');
-      if (ordersData) {
-        const orders = JSON.parse(ordersData);
-        // Find the most recent order that is NOT completed
-        const activeOrder = orders.find((o: any) => o.status !== 'completed');
-        if (activeOrder) {
-          setActiveOrderId(activeOrder.id.replace('#', ''));
-        } else {
-          setActiveOrderId(null);
+    const checkActiveOrder = async () => {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          const userId = user.UserId || user.userid || user.id;
+          if (userId) {
+            const res = await fetch(`/api/orders?userid=${userId}`);
+            if (res.ok) {
+              const data = await res.json();
+              const orders = data.orders || [];
+              // Tìm đơn hàng mới nhất chưa hoàn thành (status < 5)
+              const activeOrder = orders.find((o: any) => Number(o.orderstatus) < 5);
+              if (activeOrder) {
+                setActiveOrderId(activeOrder.orderid);
+              } else {
+                setActiveOrderId(null);
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Lỗi khi fetch active order Navbar:", e);
         }
       }
     };
@@ -96,11 +147,17 @@ export function Navbar() {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Lỗi khi đăng xuất khỏi server:', error);
+    }
     localStorage.removeItem("user");
     setIsLoggedIn(false);
     // Dispatch event to notify other components if needed
     window.dispatchEvent(new Event("authChange"));
+    router.push('/'); // hoặc router.push('/auth/login')
   };
 
   return (
@@ -195,12 +252,7 @@ export function Navbar() {
                     <span>History & Calories</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/profile/settings" className="cursor-pointer flex items-center">
-                    <Settings className="mr-2 h-4 w-4 text-gray-500" />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center">
                   <LogOut className="mr-2 h-4 w-4" />

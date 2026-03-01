@@ -1,8 +1,5 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import { NextResponse } from 'next/server';
-
-const dataFilePath = path.join(process.cwd(), 'src/data/dishes.json');
+import { createClient } from '@/utils/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,22 +8,211 @@ export async function GET(
     props: { params: Promise<{ id: string }> }
 ) {
     try {
+        const supabase = await createClient();
         const params = await props.params;
         const id = params.id;
-        console.log("API Request for Dish ID:", id);
 
-        const fileContents = await fs.readFile(dataFilePath, 'utf8');
-        const dishes = JSON.parse(fileContents);
-        console.log("Dishes loaded:", dishes.length);
+        // Fetch dish
+        const { data: dish, error } = await supabase
+            .from('fooditems')
+            .select(`
+                *,
+                categories:categoryid (categoryname)
+            `)
+            .eq('foodid', id)
+            .single();
 
-        const dish = dishes.find((d: any) => d.id === id);
-
-        if (!dish) {
+        if (error || !dish) {
             return NextResponse.json({ error: 'Dish not found' }, { status: 404 });
         }
 
-        return NextResponse.json(dish);
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to read data' }, { status: 500 });
+        // Fetch toppings
+        const { data: toppings } = await supabase
+            .from('foodtoppings')
+            .select(`
+                toppingoptions (*)
+            `)
+            .eq('foodid', id);
+
+        const extras = toppings?.map((t: any) => ({
+            id: t.toppingoptions.toppingid,
+            name: t.toppingoptions.toppingname,
+            price: t.toppingoptions.price.toLocaleString('vi-VN') + " đ",
+            rawPrice: t.toppingoptions.price // Để Frontend dễ tính toán hơn
+        })) || [];
+
+        // Fetch ratings statistics
+        const { data: ratingStats } = await supabase
+            .from('foodreviews')
+            .select('rating')
+            .eq('foodid', id);
+
+        const reviewCount = ratingStats?.length || 0;
+        const avgRating = reviewCount > 0
+            ? Number((ratingStats!.reduce((acc, curr) => acc + curr.rating, 0) / reviewCount).toFixed(1))
+            : 5;
+
+        // Map back to frontend format
+        const metadata = dish.ingredients ? JSON.parse(dish.ingredients) : {};
+        const formattedDish = {
+            id: dish.foodid,
+            title: dish.foodname,
+            desc: dish.descriptions,
+            price: dish.price ? dish.price.toLocaleString('vi-VN') + " đ" : "0 đ",
+            image: dish.foodimageurl,
+            category: dish.categoryid,
+            calories: dish.calories ? dish.calories + " kcal" : "0 kcal",
+            time: dish.preptime ? dish.preptime + "m" : "0m",
+            rating: avgRating,
+            reviewCount: reviewCount,
+            dietaryBalance: metadata.dietaryBalance || "Balanced",
+            aiReview: metadata.aiReview || { summary: "", tags: [] },
+            ingredients: metadata.ingredients || [],
+            extras: extras,
+            diets: metadata.diets || [],
+            allergies: dish.allergyinfo ? JSON.parse(dish.allergyinfo) : [],
+            flavors: metadata.flavors || [],
+            foodstatus: dish.foodstatus || 'Available',
+            foodid: dish.foodid
+        };
+
+        return NextResponse.json(formattedDish);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(
+    request: Request,
+    props: { params: Promise<{ id: string }> }
+) {
+    try {
+        const supabase = await createClient();
+        const { id } = await props.params;
+
+        // Thay vì xóa, chúng ta cập nhật trạng thái thành 'Unavailable' (Ngừng kinh doanh)
+        const { error: updateError } = await supabase
+            .from('fooditems')
+            .update({ foodstatus: 'Unavailable' })
+            .eq('foodid', id);
+
+        if (updateError) {
+            console.error("Error updating foodstatus to Unavailable:", updateError);
+            throw updateError;
+        }
+
+        return NextResponse.json({ success: true, message: "Món ăn đã được chuyển sang trạng thái Ngừng kinh doanh" });
+    } catch (error: any) {
+        console.error("Delete (Update status) error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+export async function PUT(
+    request: Request,
+    props: { params: Promise<{ id: string }> }
+) {
+    try {
+        const supabase = await createClient();
+        const params = await props.params;
+        const id = params.id;
+        const dish = await request.json();
+
+        // 1. Clean and format data
+        const rawPrice = typeof dish.price === 'string'
+            ? parseInt(dish.price.replace(/[^\d]/g, ''))
+            : dish.price;
+        const calories = typeof dish.calories === 'string'
+            ? parseInt(dish.calories.replace(/[^\d]/g, ''))
+            : dish.calories;
+        const prepTime = typeof dish.time === 'string'
+            ? parseInt(dish.time.replace(/[^\d]/g, ''))
+            : dish.time;
+
+        const metadata = {
+            rating: dish.rating || 5,
+            dietaryBalance: dish.dietaryBalance,
+            aiReview: dish.aiReview,
+            ingredients: dish.ingredients,
+            diets: dish.diets,
+            flavors: dish.flavors
+        };
+
+        // 2. Update FoodItems record
+        const { error: foodError } = await supabase
+            .from('fooditems')
+            .update({
+                categoryid: dish.category,
+                foodname: dish.title,
+                price: rawPrice,
+                foodimageurl: dish.image,
+                descriptions: dish.desc,
+                calories: calories,
+                preptime: prepTime,
+                ingredients: JSON.stringify(metadata),
+                allergyinfo: JSON.stringify(dish.allergies || []),
+                foodstatus: dish.foodstatus || 'Available'
+            })
+            .eq('foodid', id);
+
+        if (foodError) throw foodError;
+
+        // 3. Update Toppings (similar to POST but delete old links first)
+        if (dish.extras && Array.isArray(dish.extras)) {
+            // Delete old links
+            await supabase
+                .from('foodtoppings')
+                .delete()
+                .eq('foodid', id);
+
+            for (const extra of dish.extras) {
+                if (!extra.name) continue;
+
+                const toppingId = extra.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+                const toppingPrice = typeof extra.price === 'string'
+                    ? parseInt(extra.price.replace(/[^\d]/g, '')) || 0
+                    : extra.price || 0;
+
+                // Upsert topping option
+                await supabase
+                    .from('toppingoptions')
+                    .upsert([{ toppingid: toppingId, toppingname: extra.name, price: toppingPrice }], { onConflict: 'toppingid' });
+
+                // Link topping to food
+                await supabase
+                    .from('foodtoppings')
+                    .upsert([{ foodid: id, toppingid: toppingId }], { onConflict: 'foodid,toppingid' });
+            }
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error("Update error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+export async function PATCH(
+    request: Request,
+    props: { params: Promise<{ id: string }> }
+) {
+    try {
+        const supabase = await createClient();
+        const { id } = await props.params;
+        const body = await request.json();
+
+        const { error: updateError } = await supabase
+            .from('fooditems')
+            .update({ foodstatus: body.foodstatus })
+            .eq('foodid', id);
+
+        if (updateError) {
+            console.error("Error patching foodstatus:", updateError);
+            throw updateError;
+        }
+
+        return NextResponse.json({ success: true, message: "Trạng thái món ăn đã được cập nhật" });
+    } catch (error: any) {
+        console.error("Patch error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

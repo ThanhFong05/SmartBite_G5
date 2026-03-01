@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -25,7 +26,6 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            // First run the API for admin check and session establishment
             const res = await fetch("/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -33,57 +33,30 @@ export default function LoginPage() {
             });
 
             const data = await res.json();
-            const normalizedEmail = email.trim().toLowerCase();
 
             if (res.ok && data.success) {
-                // Check if user was registered locally
-                const registeredUsersStr = localStorage.getItem("registeredUsers");
-                const registeredUsers = registeredUsersStr ? JSON.parse(registeredUsersStr) : {};
-                const registeredUser = registeredUsers[normalizedEmail];
+                // Đăng nhập thành công! KHÔNG kiểm tra localStorage nữa.
 
-                if (data.role !== 'admin') {
-                    // Force client-side password check against localStorage for non-admin
-                    if (registeredUser) {
-                        if (registeredUser.password !== password) {
-                            setError("Incorrect password.");
-                            setIsLoading(false);
-                            return;
-                        }
-                    } else {
-                        setError("Account does not exist. Please register.");
-                        setIsLoading(false);
-                        return;
-                    }
-                }
-
-                // Try to get existing name from localStorage (fallback)
-                const existingUserStr = localStorage.getItem("user");
-                const existingUser = existingUserStr ? JSON.parse(existingUserStr) : null;
-
-                let userName = email.split('@')[0] || "User";
-                if (registeredUser && registeredUser.name && registeredUser.name !== "User") {
-                    userName = registeredUser.name;
-                } else if (existingUser?.email === normalizedEmail && existingUser?.name) {
-                    userName = existingUser.name;
-                } else if (existingUser?.name && !existingUser?.email) {
-                    userName = existingUser.name;
-                }
-
-                // Set client-side auth state for Navbar
-                localStorage.setItem("user", JSON.stringify({
-                    name: userName,
-                    email: normalizedEmail,
-                    role: data.role,
-                    phone: registeredUser?.phone || existingUser?.phone || "",
-                    address: registeredUser?.address || existingUser?.address || "",
-                    birthdate: registeredUser?.birthdate || existingUser?.birthdate || ""
-                }));
-                window.dispatchEvent(new Event("authChange"));
-
+                // Lưu state tạm thời cho Navbar (Header) lấy dữ liệu hiển thị
                 if (data.role === 'admin') {
+                    localStorage.setItem("user", JSON.stringify({
+                        userid: data.user?.userid,
+                        fullname: data.user?.fullname || "Admin",
+                        role: "admin"
+                    }));
+                    window.dispatchEvent(new Event("authChange"));
                     router.push("/admin");
                 } else {
-                    router.push("/");
+                    localStorage.setItem("user", JSON.stringify({
+                        userid: data.user?.userid,
+                        fullname: data.user?.fullname,
+                        email: data.user?.email,
+                        role: 'user',
+                        phonenumber: data.user?.phonenumber,
+                        addressdelivery: data.user?.addressdelivery,
+                    }));
+                    window.dispatchEvent(new Event("authChange"));
+                    router.push("/"); // Chuyển về trang chủ
                 }
             } else {
                 setError(data.error || "Login failed");
@@ -92,6 +65,21 @@ export default function LoginPage() {
             setError("Something went wrong. Please try again.");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleOAuthLogin = async (provider: 'google' | 'facebook') => {
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: provider,
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message || `Could not login with ${provider}`);
         }
     };
 
@@ -208,7 +196,12 @@ export default function LoginPage() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <Button variant="outline" className="h-12 border-gray-200 hover:bg-gray-50 bg-white text-gray-700">
+                            <Button
+                                type="button"
+                                onClick={() => handleOAuthLogin('google')}
+                                variant="outline"
+                                className="h-12 border-gray-200 hover:bg-gray-50 bg-white text-gray-700"
+                            >
                                 <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
                                     <path
                                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -229,7 +222,12 @@ export default function LoginPage() {
                                 </svg>
                                 Google
                             </Button>
-                            <Button variant="outline" className="h-12 border-gray-200 hover:bg-gray-50 bg-white text-gray-700">
+                            <Button
+                                type="button"
+                                onClick={() => handleOAuthLogin('facebook')}
+                                variant="outline"
+                                className="h-12 border-gray-200 hover:bg-gray-50 bg-white text-gray-700"
+                            >
                                 <svg className="mr-2 h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                                 </svg>

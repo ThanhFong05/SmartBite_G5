@@ -5,52 +5,89 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Facebook, Mail, Sparkles, Star, User, Phone, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-
 import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 export default function RegisterPage() {
     const router = useRouter();
+
+    // States quản lý giao diện
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
-    };
-
+    // States quản lý dữ liệu nhập (Form Data)
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [address, setAddress] = useState("");
     const [birthdate, setBirthdate] = useState("");
     const [password, setPassword] = useState("");
+    const [oauthError, setOauthError] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
+    // Hàm xử lý đăng ký kết nối với Supabase qua API Route
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle registration logic here
-        console.log("Form submitted");
 
-        // Save to registered users list to simulate database
-        const existingStr = localStorage.getItem("registeredUsers");
-        const registeredUsers = existingStr ? JSON.parse(existingStr) : {};
-        const normalizedEmail = email.trim().toLowerCase();
+        if (isLoading) return;
+        setIsLoading(true);
 
-        registeredUsers[normalizedEmail] = {
-            name: name.trim() || "User",
-            email: normalizedEmail,
-            phone: phone.trim(),
-            address: address.trim(),
-            birthdate: birthdate.trim(),
-            password: password
-        };
-        localStorage.setItem("registeredUsers", JSON.stringify(registeredUsers));
+        try {
+            // Gọi đến API route: /api/auth/register
+            const response = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email.trim().toLowerCase(),
+                    password: password,
+                    fullName: name.trim(),
+                    phoneNumber: phone.trim(),
+                    birthDate: birthdate,
+                    address: address.trim(),
+                }),
+            });
 
-        router.push("/auth/login");
+            const result = await response.json();
+
+            if (response.ok) {
+                alert("Đăng ký thành công! Chào mừng bạn đến với SmartBite.");
+                router.push("/auth/login");
+            } else {
+                // Hiển thị lỗi từ server (VD: Email đã tồn tại)
+                alert(result.error || "Đăng ký thất bại. Vui lòng thử lại.");
+            }
+        } catch (error) {
+            console.error("Connection error:", error);
+            alert("Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại mạng.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleOAuthLogin = async (provider: 'google' | 'facebook') => {
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: provider,
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setOauthError(err.message || `Could not login with ${provider}`);
+        }
     };
 
     return (
         <div className="flex min-h-screen w-full">
             {/* Left Section - Hero/Promotional */}
             <div className="hidden w-1/2 flex-col justify-between bg-orange-500 p-12 text-white lg:flex relative overflow-hidden">
-                {/* Decorative background pattern */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none"
                     style={{ backgroundImage: 'radial-gradient(circle, #fff 2px, transparent 2.5px)', backgroundSize: '30px 30px' }}>
                 </div>
@@ -192,22 +229,16 @@ export default function RegisterPage() {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    pattern=".{8,}"
-                                    title="Password must be at least 8 characters"
+                                    minLength={8}
                                 />
                                 <button
                                     type="button"
                                     onClick={togglePasswordVisibility}
                                     className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none"
                                 >
-                                    {showPassword ? (
-                                        <EyeOff className="h-5 w-5" />
-                                    ) : (
-                                        <Eye className="h-5 w-5" />
-                                    )}
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-500">Password must be at least 8 characters.</p>
                         </div>
 
                         <div className="flex items-start gap-3">
@@ -222,22 +253,36 @@ export default function RegisterPage() {
                             </label>
                         </div>
 
-                        <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 text-white h-12 text-lg font-medium">
-                            Register Now
+                        <Button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-orange-500 hover:bg-orange-600 text-white h-12 text-lg font-medium"
+                        >
+                            {isLoading ? "Đang xử lý..." : "Register Now"}
                         </Button>
+                        {oauthError && (
+                            <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center mt-2">
+                                {oauthError}
+                            </div>
+                        )}
                     </form>
 
-                    <div className="relative">
+                    <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t border-gray-200" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-2 text-gray-500">Or register with</span>
+                            <span className="bg-white px-2 text-gray-500">Or continue with</span>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Button variant="outline" className="h-12 border-gray-200 hover:bg-gray-50 bg-white text-gray-700">
+                        <Button
+                            type="button"
+                            onClick={() => handleOAuthLogin('google')}
+                            variant="outline"
+                            className="h-12 border-gray-200 hover:bg-gray-50 bg-white text-gray-700"
+                        >
                             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
                                 <path
                                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -258,7 +303,12 @@ export default function RegisterPage() {
                             </svg>
                             Google
                         </Button>
-                        <Button variant="outline" className="h-12 border-gray-200 hover:bg-gray-50 bg-white text-gray-700">
+                        <Button
+                            type="button"
+                            onClick={() => handleOAuthLogin('facebook')}
+                            variant="outline"
+                            className="h-12 border-gray-200 hover:bg-gray-50 bg-white text-gray-700"
+                        >
                             <svg className="mr-2 h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                             </svg>
@@ -266,7 +316,7 @@ export default function RegisterPage() {
                         </Button>
                     </div>
 
-                    <div className="text-center text-sm text-gray-500">
+                    <div className="text-center text-sm text-gray-500 mt-6">
                         Already have an account?{" "}
                         <Link href="/auth/login" className="font-medium text-orange-500 hover:underline">
                             Login

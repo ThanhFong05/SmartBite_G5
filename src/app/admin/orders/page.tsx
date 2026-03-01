@@ -7,40 +7,93 @@ import { Input } from "@/components/ui/input"
 export default function OrderManagement() {
     const [orders, setOrders] = useState<any[]>([])
 
-    // Poll for new orders from localStorage
+    // Poll for new orders from API
     useEffect(() => {
-        const loadOrders = () => {
-            const localOrders = JSON.parse(localStorage.getItem('allOrders') || '[]')
-            setOrders(localOrders)
+        const loadOrders = async () => {
+            try {
+                const res = await fetch('/api/orders', { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    const localOrders = data.orders || [];
+
+                    // Log để debug (có thể xóa sau khi fix xong)
+                    // console.log("Raw orders from API:", localOrders.map(o => ({ id: o.orderid, st: o.orderstatus })));
+
+                    // Map DB format to UI format
+                    const formatted = localOrders.map((o: any) => {
+                        const statusMap: Record<number, string> = {
+                            1: 'pending',
+                            2: 'accepted',
+                            3: 'preparing',
+                            4: 'delivering',
+                            5: 'completed'
+                        };
+
+                        const rawStatus = Number(o.orderstatus);
+                        const status = statusMap[rawStatus] || 'pending';
+
+                        // Lấy paymentStatus từ payments (Supabase có thể trả về mảng hoặc đối tượng)
+                        const paymentInfo = Array.isArray(o.payments) ? (o.payments.length > 0 ? o.payments[0] : null) : o.payments;
+                        const pStatus = paymentInfo?.paymentstatus || 'pending';
+
+                        return {
+                            id: o.orderid,
+                            customer: o.users?.fullname || "Guest",
+                            email: o.users?.email,
+                            items: (o.orderitems || []).map((oi: any) => {
+                                const tStr = oi.orderitemtoppings?.map((t: any) => t.toppingoptions?.toppingname).filter(Boolean).join(", ");
+                                return oi.fooditems?.foodname + (tStr ? ` (+${tStr})` : "");
+                            }).filter(Boolean).join(", ") || "No items",
+                            price: new Intl.NumberFormat('vi-VN').format(o.finalamount || 0) + 'đ',
+                            time: new Date(o.ordertime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            status: status,
+                            paymentStatus: pStatus,
+                            avatar: "/images/avatar-placeholder.jpg"
+                        };
+                    });
+                    setOrders(formatted);
+                }
+            } catch (error) {
+                console.error("Load Orders Error:", error);
+            }
         }
 
         loadOrders()
 
-        // Listen for storage events across tabs
-        const handleStorage = () => loadOrders()
-        window.addEventListener('storage', handleStorage)
+        // Poll every 5 seconds for new orders
+        const interval = setInterval(loadOrders, 5000)
 
-        // Also poll every 2 seconds to catch changes in the same tab/browser context reliably
-        const interval = setInterval(loadOrders, 2000)
-
-        return () => {
-            window.removeEventListener('storage', handleStorage)
-            clearInterval(interval)
-        }
+        return () => clearInterval(interval)
     }, [])
 
-    const updateOrderStatus = (id: string, newStatus: string) => {
-        // Update local state for immediate UI feedback
-        const updated = orders.map(order => order.id === id ? { ...order, status: newStatus } : order)
-        setOrders(updated)
+    const updateOrderStatus = async (id: string, newStatus: string) => {
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
 
-        // Also update localStorage so the customer tab detects it
-        const localOrders = JSON.parse(localStorage.getItem('allOrders') || '[]')
-        const updatedLocal = localOrders.map((order: any) => order.id === id ? { ...order, status: newStatus } : order)
-        localStorage.setItem('allOrders', JSON.stringify(updatedLocal))
-
-        // Trigger storage event
-        window.dispatchEvent(new Event('storage'))
+            if (res.ok) {
+                // Update local state for immediate feedback
+                setOrders(prev => prev.map(order => order.id === id ? { ...order, status: newStatus } : order));
+                // Reload from server to be sure
+                const refreshRes = await fetch('/api/orders', { cache: 'no-store' });
+                if (refreshRes.ok) {
+                    const data = await refreshRes.json();
+                    const localOrders = data.orders || [];
+                    // ... same mapping as useEffect ...
+                    // Short version for refresh:
+                    window.location.reload(); // Quickest way to sync all state including status Map
+                }
+            } else {
+                const errData = await res.json();
+                alert("Lỗi cập nhật: " + (errData.error || "Không rõ nguyên nhân"));
+            }
+        } catch (error) {
+            console.error("Update Status Error:", error);
+            alert("Lỗi kết nối máy chủ.");
+        }
     }
 
     return (
@@ -99,8 +152,11 @@ export default function OrderManagement() {
                                     </td>
                                     <td className="px-6 py-5">
                                         {order.status === 'pending' && (
-                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                                                Awaiting QR Payment
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${order.paymentStatus === 'completed'
+                                                ? 'bg-green-100 text-green-700 border border-green-200'
+                                                : 'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                {order.paymentStatus === 'completed' ? 'Paid - Post Confirmation' : 'Awaiting QR Payment'}
                                             </span>
                                         )}
                                         {order.status === 'accepted' && (

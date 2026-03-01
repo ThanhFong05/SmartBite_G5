@@ -29,9 +29,11 @@ import {
     Leaf,
     Drumstick,
     Coffee,
-    IceCream,
-    Apple
+    Cake,
+    Apple,
+    Upload
 } from "lucide-react"
+import { createClient } from "@/utils/supabase/client"
 
 // Define icons map
 const INGREDIENT_ICONS = [
@@ -55,6 +57,11 @@ interface Extra {
     price: string
 }
 
+interface Category {
+    categoryid: string
+    categoryname: string
+}
+
 interface Dish {
     id: string
     title: string
@@ -76,6 +83,7 @@ interface Dish {
     diets: string[]
     allergies: string[]
     flavors: string[]
+    foodstatus: string
 }
 
 const DEFAULT_DISH: Partial<Dish> = {
@@ -86,37 +94,68 @@ const DEFAULT_DISH: Partial<Dish> = {
     calories: "",
     image: "/images/bunchahanoi.jpg",
     rating: 5,
-    category: "Food",
+    category: "",
     dietaryBalance: "Balanced",
     aiReview: { summary: "", tags: [] },
     ingredients: [],
     extras: [],
     diets: [],
     allergies: [],
-    flavors: []
+    flavors: [],
+    foodstatus: "Available"
 }
 
-const PREDEFINED_TAGS = ["High Protein", "Low Fat", "Balanced Carbs", "High Fiber", "Low Sugar", "Low Calorie"]
-const CATEGORIES = [
-    { id: "Food", label: "Food", icon: Leaf },
-    { id: "Drinks", label: "Drinks", icon: Coffee },
-    { id: "Dessert", label: "Dessert", icon: IceCream },
-]
+const FLAVORS = ["Sweet", "Sour", "Spicy", "Salty", "Bitter"]
 const DIETARY_BALANCE = ["Balanced", "Moderate", "Indulgent"]
 const DIETS = ["Vegan", "Keto", "Low-carb", "Eat Clean"]
 const ALLERGIES = ["Seafood", "Peanut", "Milk", "Egg", "Gluten", "Soy", "Wheat", "Nuts"]
-const FLAVORS = ["Sweet", "Sour", "Spicy", "Salty", "Bitter"]
+const PREDEFINED_TAGS = ["High Protein", "Low Fat", "Balanced Carbs", "High Fiber", "Low Sugar", "Low Calorie"]
+
+const CATEGORY_ICON_MAP: Record<string, any> = {
+    "Main Course": Beef,
+    "Healthy Food": Leaf,
+    "Drinks": Coffee,
+    "Dessert": Cake,
+    "Default": Utensils
+}
 
 export default function MenuManagement() {
     const [dishes, setDishes] = useState<Dish[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [newDish, setNewDish] = useState<Partial<Dish>>(DEFAULT_DISH)
+    const [categories, setCategories] = useState<Category[]>([])
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [uploadError, setUploadError] = useState("")
+    const [editingDishId, setEditingDishId] = useState<string | null>(null)
+
+    const supabase = createClient()
 
     useEffect(() => {
-        fetchDishes()
+        const initData = async () => {
+            setIsLoading(true);
+            await Promise.all([fetchDishes(), fetchCategories()]);
+            setIsLoading(false);
+        };
+        initData();
     }, [])
+
+    const fetchCategories = async () => {
+        try {
+            const res = await fetch("/api/categories")
+            if (res.ok) {
+                const data: Category[] = await res.json()
+                setCategories(data)
+                // Set default category if not set
+                if (data.length > 0 && !newDish.category) {
+                    setNewDish(prev => ({ ...prev, category: data[0].categoryid }))
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching categories:", error)
+        }
+    }
 
     const fetchDishes = async () => {
         try {
@@ -134,6 +173,13 @@ export default function MenuManagement() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
         setNewDish(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0])
+            setUploadError("")
+        }
     }
 
     const handleAiReviewChange = (field: 'summary' | 'tags', value: any) => {
@@ -194,24 +240,97 @@ export default function MenuManagement() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsSubmitting(true)
+        setUploadError("")
+
+        if (!newDish.category) {
+            alert("Vui lòng chọn danh mục cho món ăn!");
+            setIsSubmitting(false);
+            return;
+        }
 
         try {
-            const res = await fetch("/api/dishes", {
-                method: "POST",
+            let imageUrl = newDish.image
+
+            // Nếu người dùng chọn file mới, upload lên Supabase Storage
+            if (selectedFile) {
+                const fileExt = selectedFile.name.split('.').pop()
+                const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
+                const filePath = `${fileName}`
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('food-images')
+                    .upload(filePath, selectedFile)
+
+                if (uploadError) {
+                    console.error("Lỗi upload ảnh chi tiết:", uploadError)
+                    setUploadError(`Lỗi tải ảnh: ${uploadError.message || JSON.stringify(uploadError)}`)
+                    setIsSubmitting(false)
+                    return
+                }
+
+                // Lấy URL Public của ảnh vừa up
+                const { data: publicUrlData } = supabase.storage
+                    .from('food-images')
+                    .getPublicUrl(filePath)
+
+                imageUrl = publicUrlData.publicUrl
+            }
+
+            // Gắn URL ảnh vào thông tin món trước khi lưu
+            const finalDish = { ...newDish, image: imageUrl }
+
+            const url = editingDishId ? `/api/dishes/${editingDishId}` : "/api/dishes"
+            const method = editingDishId ? "PUT" : "POST"
+
+            const res = await fetch(url, {
+                method: method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newDish)
+                body: JSON.stringify(finalDish)
             })
 
             if (res.ok) {
+                alert(editingDishId ? "Cập nhật món ăn thành công!" : "Lưu món ăn thành công!");
                 await fetchDishes()
                 setIsDialogOpen(false)
                 setNewDish(DEFAULT_DISH)
+                setEditingDishId(null)
+                setSelectedFile(null)
+            } else {
+                const errorData = await res.json();
+                alert(`Lỗi khi lưu món ăn: ${errorData.error || "Không xác định"}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error adding dish:", error)
+            alert(`Đã xảy ra lỗi: ${error.message || "Không thể kết nối với máy chủ"}`);
         } finally {
             setIsSubmitting(false)
         }
+    }
+
+    const handleUpdateStatus = async (id: string, newStatus: string) => {
+        try {
+            const res = await fetch(`/api/dishes/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ foodstatus: newStatus })
+            })
+            if (res.ok) {
+                setDishes(prev => prev.map(dish =>
+                    dish.id === id ? { ...dish, foodstatus: newStatus } : dish
+                ))
+            } else {
+                const errorData = await res.json()
+                alert(`Lỗi: ${errorData.error || "Không thể cập nhật trạng thái"}`)
+            }
+        } catch (error) {
+            console.error("Error updating dish status:", error)
+            alert("Đã xảy ra lỗi khi kết nối với máy chủ")
+        }
+    }
+
+    const handleDelete = async (id: string) => {
+        // Hàm này giữ lại để tương thích nếu cần, nhưng logic chính đã chuyển sang handleUpdateStatus
+        await handleUpdateStatus(id, 'Unavailable');
     }
 
     return (
@@ -223,15 +342,21 @@ export default function MenuManagement() {
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-200">
+                        <Button
+                            className="bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-200"
+                            onClick={() => {
+                                setNewDish(DEFAULT_DISH);
+                                setEditingDishId(null);
+                            }}
+                        >
                             <Plus className="mr-2 h-4 w-4" /> Add New Dish
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[700px] overflow-y-auto max-h-[90vh]">
                         <DialogHeader>
-                            <DialogTitle>Add New Dish</DialogTitle>
+                            <DialogTitle>{editingDishId ? "Edit Dish" : "Add New Dish"}</DialogTitle>
                             <DialogDescription>
-                                Create a new menu item with filters, detailed ingredients and extras.
+                                {editingDishId ? "Update dish details, ingredients and extras." : "Create a new menu item with filters, detailed ingredients and extras."}
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="grid gap-6 py-4">
@@ -252,11 +377,26 @@ export default function MenuManagement() {
                                         <Input id="price" name="price" value={newDish.price} onChange={handleInputChange} placeholder="e.g. 50.000 đ" required />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="image">Image URL</Label>
-                                        <Input id="image" name="image" value={newDish.image} onChange={handleInputChange} />
+                                        <Label htmlFor="image">Dish Image</Label>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    id="image"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleFileChange}
+                                                    className="cursor-pointer file:cursor-pointer file:bg-orange-50 file:text-orange-700 file:border-0 file:rounded-md file:px-2 file:py-1 file:mr-2 hover:file:bg-orange-100"
+                                                />
+                                                {selectedFile && <span className="text-xs text-green-600 block shrink-0 flex items-center gap-1"><Upload className="w-3 h-3" /> Selected</span>}
+                                            </div>
+                                            {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+                                            {!selectedFile && newDish.image && (
+                                                <p className="text-xs text-gray-400 mt-1 truncate">Current: {newDish.image}</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="time">Time</Label>
                                         <Input id="time" name="time" value={newDish.time} onChange={handleInputChange} placeholder="20m" />
@@ -264,10 +404,6 @@ export default function MenuManagement() {
                                     <div className="grid gap-2">
                                         <Label htmlFor="calories">Calories</Label>
                                         <Input id="calories" name="calories" value={newDish.calories} onChange={handleInputChange} placeholder="500 kcal" />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="rating">Rating</Label>
-                                        <Input id="rating" name="rating" type="number" step="0.1" max="5" value={newDish.rating} onChange={handleInputChange} />
                                     </div>
                                 </div>
                             </div>
@@ -277,23 +413,27 @@ export default function MenuManagement() {
                                 <div className="space-y-3">
                                     <Label className="text-base font-semibold">Categories</Label>
                                     <div className="space-y-2">
-                                        {CATEGORIES.map(cat => {
-                                            const Icon = cat.icon
-                                            const isSelected = newDish.category === cat.id
-                                            return (
-                                                <div
-                                                    key={cat.id}
-                                                    onClick={() => setNewDish(prev => ({ ...prev, category: cat.id }))}
-                                                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected
-                                                        ? 'bg-orange-50 border-orange-500 text-orange-700'
-                                                        : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'
-                                                        }`}
-                                                >
-                                                    <Icon className={`h-5 w-5 ${isSelected ? 'text-orange-500' : 'text-gray-400'}`} />
-                                                    <span className="font-medium">{cat.label}</span>
-                                                </div>
-                                            )
-                                        })}
+                                        {categories.length > 0 ? (
+                                            categories.map(cat => {
+                                                const isSelected = newDish.category === cat.categoryid
+                                                const Icon = CATEGORY_ICON_MAP[cat.categoryname] || CATEGORY_ICON_MAP["Default"]
+                                                return (
+                                                    <div
+                                                        key={cat.categoryid}
+                                                        onClick={() => setNewDish(prev => ({ ...prev, category: cat.categoryid }))}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected
+                                                            ? 'bg-orange-50 border-orange-500 text-orange-700'
+                                                            : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'
+                                                            }`}
+                                                    >
+                                                        <Icon className={`h-5 w-5 ${isSelected ? 'text-orange-500' : 'text-gray-400'}`} />
+                                                        <span className="font-medium">{cat.categoryname}</span>
+                                                    </div>
+                                                )
+                                            })
+                                        ) : (
+                                            <p className="text-sm text-gray-500 italic pb-2">No categories found in DB. Please add them in Supabase.</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -314,7 +454,39 @@ export default function MenuManagement() {
                                         ))}
                                     </div>
                                 </div>
+                                {editingDishId && (
+                                    <div className="space-y-3">
+                                        <Label className="text-base font-semibold">Status (Trạng thái hiển thị)</Label>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                variant={newDish.foodstatus === "Available" ? "default" : "outline"}
+                                                className={newDish.foodstatus === "Available" ? "bg-green-600 hover:bg-green-700" : ""}
+                                                onClick={() => setNewDish(prev => ({ ...prev, foodstatus: "Available" }))}
+                                            >
+                                                Còn món
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant={newDish.foodstatus === "Out of Stock" ? "default" : "outline"}
+                                                className={newDish.foodstatus === "Out of Stock" ? "bg-yellow-600 hover:bg-yellow-700" : ""}
+                                                onClick={() => setNewDish(prev => ({ ...prev, foodstatus: "Out of Stock" }))}
+                                            >
+                                                Hết món
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant={newDish.foodstatus === "Unavailable" ? "default" : "outline"}
+                                                className={newDish.foodstatus === "Unavailable" ? "bg-red-600 hover:bg-red-700" : ""}
+                                                onClick={() => setNewDish(prev => ({ ...prev, foodstatus: "Unavailable" }))}
+                                            >
+                                                Ngừng bán
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
 
                             {/* Diets */}
                             <div className="grid grid-cols-1 gap-6">
@@ -502,12 +674,14 @@ export default function MenuManagement() {
 
                             <DialogFooter className="mt-6 sticky bottom-0 bg-white pt-2 border-t">
                                 <Button type="submit" disabled={isSubmitting} className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto">
-                                    {isSubmitting ? "Saving..." : "Save Dish"}
+                                    {isSubmitting ? "Saving..." : (editingDishId ? "Update Dish" : "Save Dish")}
                                 </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
+
+
             </div>
 
             <Card className="border-gray-100 shadow-sm">
@@ -532,7 +706,7 @@ export default function MenuManagement() {
                                         <th className="p-4">Name</th>
                                         <th className="p-4">Category</th>
                                         <th className="p-4">Price</th>
-                                        <th className="p-4">Rating</th>
+                                        <th className="p-4">Status</th>
                                         <th className="p-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -555,19 +729,33 @@ export default function MenuManagement() {
                                                 </span>
                                             </td>
                                             <td className="p-4 text-gray-600 font-medium">{dish.price}</td>
-                                            <td className="p-4 text-gray-600">
-                                                <div className="flex items-center gap-1">
-                                                    <span className="text-yellow-400">★</span>
-                                                    {dish.rating}
-                                                </div>
+                                            <td className="p-4">
+                                                <select
+                                                    value={dish.foodstatus}
+                                                    onChange={(e) => handleUpdateStatus(dish.id, e.target.value)}
+                                                    className={`text-xs font-medium rounded-full px-2 py-1 border border-gray-200 focus:ring-2 focus:ring-orange-200 cursor-pointer outline-none
+                                                        ${dish.foodstatus === "Available" ? "bg-green-50 text-green-700 border-green-100" :
+                                                            dish.foodstatus === "Out of Stock" ? "bg-yellow-50 text-yellow-700 border-yellow-100" : "bg-red-50 text-red-700 border-red-100"}`}
+                                                >
+                                                    <option value="Available">Còn bán</option>
+                                                    <option value="Out of Stock">Hết hàng</option>
+                                                    <option value="Unavailable">Ngừng bán</option>
+                                                </select>
                                             </td>
+
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                        onClick={() => {
+                                                            setNewDish(dish);
+                                                            setEditingDishId(dish.id);
+                                                            setIsDialogOpen(true);
+                                                        }}
+                                                    >
                                                         <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50">
-                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </td>

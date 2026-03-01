@@ -1,40 +1,125 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import { NextResponse } from 'next/server';
-
-const dataFilePath = path.join(process.cwd(), 'src/data/dishes.json');
+import { createClient } from '@/utils/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        const fileContents = await fs.readFile(dataFilePath, 'utf8');
-        const dishes = JSON.parse(fileContents);
-        return NextResponse.json(dishes);
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to read data' }, { status: 500 });
+        const supabase = await createClient();
+
+        // Fetch dishes joined with Categories and Reviews
+        const { data: dishes, error } = await supabase
+            .from('fooditems')
+            .select(`
+                *,
+                categories:categoryid (categoryname),
+                foodreviews (rating)
+            `);
+
+        if (error) throw error;
+
+        // Map DB data back to Frontend format
+        const formattedDishes = dishes.map(dish => {
+            const reviews = (dish as any).foodreviews || [];
+            const reviewCount = reviews.length;
+            const avgRating = reviewCount > 0
+                ? Number((reviews.reduce((acc: number, curr: any) => acc + curr.rating, 0) / reviewCount).toFixed(1))
+                : 5;
+
+            const metadata = dish.ingredients ? JSON.parse(dish.ingredients) : {};
+            return {
+                id: dish.foodid,
+                title: dish.foodname,
+                desc: dish.descriptions,
+                price: dish.price ? dish.price.toLocaleString('vi-VN') + " đ" : "0 đ",
+                image: dish.foodimageurl,
+                category: dish.categoryid,
+                calories: dish.calories ? dish.calories + " kcal" : "0 kcal",
+                time: dish.preptime ? dish.preptime + "m" : "0m",
+                rating: avgRating,
+                reviewCount: reviewCount,
+                dietaryBalance: metadata.dietaryBalance || "Balanced",
+                aiReview: metadata.aiReview || { summary: "", tags: [] },
+                ingredients: metadata.ingredients || [],
+                extras: [],
+                diets: metadata.diets || [],
+                allergies: dish.allergyinfo ? JSON.parse(dish.allergyinfo) : [],
+                flavors: metadata.flavors || [],
+                foodstatus: dish.foodstatus || 'Available'
+            };
+        });
+
+        return NextResponse.json(formattedDishes);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     try {
-        const newDish = await request.json();
-        const fileContents = await fs.readFile(dataFilePath, 'utf8');
-        const dishes = JSON.parse(fileContents);
+        const supabase = await createClient();
+        const dish = await request.json();
 
-        // Simple ID generation
-        newDish.id = (dishes.length + 1).toString();
-        // Ensure slug is unique or just generated
-        if (!newDish.slug) {
-            newDish.slug = newDish.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+        // 1. Prepare FoodItems data
+        const foodId = dish.id || "FOOD-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+
+        // Clean price: "50.000 đ" -> 50000
+        const rawPrice = typeof dish.price === 'string'
+            ? parseInt(dish.price.replace(/\D/g, '')) || 0
+            : dish.price;
+
+        const calories = parseInt(String(dish.calories).replace(/\D/g, '')) || 0;
+        const prepTime = parseInt(String(dish.time).replace(/\D/g, '')) || 0;
+
+        // Store extra metadata in Ingredients column as JSON
+        const metadata = {
+            rating: dish.rating,
+            dietaryBalance: dish.dietaryBalance,
+            aiReview: dish.aiReview,
+            ingredients: dish.ingredients,
+            diets: dish.diets,
+            flavors: dish.flavors
+        };
+
+        const { error: foodError } = await supabase
+            .from('fooditems')
+            .insert([{
+                foodid: foodId,
+                categoryid: dish.category,
+                foodname: dish.title,
+                price: rawPrice,
+                foodimageurl: dish.image,
+                descriptions: dish.desc,
+                calories: calories,
+                preptime: prepTime,
+                ingredients: JSON.stringify(metadata),
+                allergyinfo: JSON.stringify(dish.allergies || []),
+                foodstatus: dish.foodstatus || 'Available'
+            }]);
+
+        if (foodError) throw foodError;
+
+        // 2. Handle Toppings (Extras)
+        if (dish.extras && dish.extras.length > 0) {
+            for (const extra of dish.extras) {
+                const toppingId = "TOP-" + extra.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+                const toppingPrice = parseInt(String(extra.price).replace(/\D/g, '')) || 0;
+
+                // Insert into ToppingOptions (ignore if exists)
+                await supabase
+                    .from('toppingoptions')
+                    .upsert([{ toppingid: toppingId, toppingname: extra.name, price: toppingPrice }], { onConflict: 'toppingid' });
+
+                // Link in FoodToppings
+                await supabase
+                    .from('foodtoppings')
+                    .upsert([{ foodid: foodId, toppingid: toppingId }], { onConflict: 'foodid,toppingid' });
+            }
         }
 
-        dishes.push(newDish);
-
-        await fs.writeFile(dataFilePath, JSON.stringify(dishes, null, 2), 'utf8');
-
-        return NextResponse.json(newDish, { status: 201 });
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
+        return NextResponse.json({ success: true, id: foodId }, { status: 201 });
+    } catch (error: any) {
+        console.error("Lỗi API Dishes:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

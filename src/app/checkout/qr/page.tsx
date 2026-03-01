@@ -29,14 +29,19 @@ export default function QRPaymentPage() {
             return;
         }
 
-        // Load cart items from localStorage
-        const cartData = localStorage.getItem('cartItems')
-        if (cartData) {
-            setCartItems(JSON.parse(cartData))
-        }
+        // Get OrderId from URL
+        const params = new URLSearchParams(window.location.search);
+        const urlOrderId = params.get('orderId');
 
-        // Generate random order ID
-        setOrderId(`#SB-${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`)
+        if (urlOrderId) {
+            setOrderId(urlOrderId);
+            fetchOrderDetails(urlOrderId);
+        } else {
+            // Fallback nếu không có ID (có thể quay lại cart)
+            // router.push("/cart");
+            // Để mock tạm thời nếu cần
+            setOrderId(`#SB-${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`);
+        }
 
         // Countdown timer
         const timer = setInterval(() => {
@@ -46,14 +51,72 @@ export default function QRPaymentPage() {
         return () => clearInterval(timer)
     }, [])
 
+    const fetchOrderDetails = async (id: string) => {
+        try {
+            const res = await fetch(`/api/orders/${id}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.order) {
+                    const orderData = data.order;
+                    // Map items từ DB sang UI format (tương tự trang cart)
+                    const formatted = orderData.orderitems?.map((oi: any) => ({
+                        id: oi.orderitemid,
+                        title: oi.fooditems?.foodname,
+                        image: oi.fooditems?.foodimageurl,
+                        price: oi.priceattime,
+                        quantity: oi.quantity
+                    })) || [];
+                    setCartItems(formatted);
+                }
+            }
+        } catch (error) {
+            console.error("Fetch Order Details Error:", error);
+        }
+    }
+
+    const handlePaymentConfirm = async () => {
+        setIsCheckingPayment(true)
+
+        try {
+            // Gọi API xác nhận thanh toán trên DB
+            const res = await fetch("/api/payments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orderid: orderId,
+                    paymentstatus: 'completed'
+                })
+            });
+
+            if (res.ok) {
+                setPaymentSuccess(true);
+                setIsCheckingPayment(false);
+
+                // Đồng bộ Navbar (vì giỏ hàng đã được làm sạch trên DB)
+                window.dispatchEvent(new Event('cartUpdate'));
+
+                // Redirect sau 2 giây
+                setTimeout(() => {
+                    // Chuyển hướng đến trang tracking
+                    router.push(`/order/${orderId}`);
+                }, 2000);
+            } else {
+                alert("Không thể xác nhận thanh toán. Vui lòng thử lại.");
+                setIsCheckingPayment(false);
+            }
+        } catch (error) {
+            console.error("Payment Confirmation Error:", error);
+            setIsCheckingPayment(false);
+        }
+    }
+
     const minutes = Math.floor(timeLeft / 60)
     const seconds = timeLeft % 60
 
-    // Pricing calculation
     const parsePrice = (priceStr: string | number) => {
         if (!priceStr) return 0;
         if (typeof priceStr === 'number') return priceStr;
-        const numericStr = priceStr.replace(/[^\d]/g, '')
+        const numericStr = (priceStr as string).replace(/[^\d]/g, '')
         return parseInt(numericStr, 10) || 0;
     }
 
@@ -64,71 +127,6 @@ export default function QRPaymentPage() {
     const subtotal = cartItems.reduce((sum, item) => sum + (parsePrice(item.price) * (item.quantity || 1)), 0)
     const shippingFee = subtotal > 0 ? 15000 : 0
     const total = subtotal + shippingFee
-
-    // Handle "I have paid" click
-    const handlePaymentConfirm = () => {
-        setIsCheckingPayment(true)
-
-        // Retrieve user address if exists
-        let orderAddress = "Pay with VNPay/MoMo";
-        try {
-            const userStr = localStorage.getItem("user");
-            if (userStr) {
-                const user = JSON.parse(userStr);
-                orderAddress = user.address || orderAddress;
-            }
-        } catch (e) { }
-
-        // Create new order object
-        const newOrder = {
-            id: orderId,
-            customer: "Customer (You)", // Mock customer name
-            items: cartItems.map(item => item.title).join(", "),
-            cartDetails: cartItems, // Save full cart details for tracking page
-            price: formatPrice(total),
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            status: "pending",
-            address: orderAddress,
-            avatar: "/images/avatar-placeholder.jpg"
-        }
-
-        // Save to localStorage's allOrders array
-        const existingOrders = JSON.parse(localStorage.getItem('allOrders') || '[]')
-
-        // Remove old order with same ID if exists (edge case)
-        const updatedOrders = existingOrders.filter((o: any) => o.id !== orderId)
-        updatedOrders.unshift(newOrder) // Add to beginning
-
-        localStorage.setItem('allOrders', JSON.stringify(updatedOrders))
-
-        // Dispatch event for other tabs and components tracking orders natively
-        window.dispatchEvent(new Event('storage'))
-        window.dispatchEvent(new Event('orderUpdate'))
-
-        // Start checking for status updates
-        const checkInterval = setInterval(() => {
-            const currentOrders = JSON.parse(localStorage.getItem('allOrders') || '[]')
-            const thisOrder = currentOrders.find((o: any) => o.id === orderId)
-
-            if (thisOrder && thisOrder.status === 'accepted') {
-                clearInterval(checkInterval)
-                setPaymentSuccess(true)
-                setIsCheckingPayment(false)
-
-                // Clear cart
-                localStorage.removeItem('cartItems')
-                window.dispatchEvent(new Event('cartUpdate'))
-
-                // Redirect after showing success for 2 seconds
-                setTimeout(() => {
-                    router.push(`/order/${orderId.replace('#', '')}`)
-                }, 2000)
-            }
-        }, 1000) // Check every second
-
-        // Also clean up interval on unmount
-        return () => clearInterval(checkInterval)
-    }
 
     if (!isMounted) return null
 
@@ -194,7 +192,7 @@ export default function QRPaymentPage() {
                                             : 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200'
                                         }`}
                                     onClick={handlePaymentConfirm}
-                                    disabled={isCheckingPayment || paymentSuccess || cartItems.length === 0}
+                                    disabled={isCheckingPayment || paymentSuccess || !orderId || orderId.startsWith('#')}
                                 >
                                     {paymentSuccess ? (
                                         <>

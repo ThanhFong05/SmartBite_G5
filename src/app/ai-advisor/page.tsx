@@ -53,13 +53,18 @@ export default function AIAdvisorPage() {
             const data = await response.json();
 
             if (data.error) {
-                throw new Error(data.error);
+                const errorMessage = data.details
+                    ? `Lỗi: ${data.error}\n\nChi tiết: ${data.details.substring(0, 100)}...`
+                    : `Lỗi: ${data.error}`;
+                setMessages((prev) => [...prev, { role: "assistant", content: errorMessage }]);
+                setIsLoading(false);
+                return;
             }
 
             setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
         } catch (error) {
             console.error("Failed to send message:", error);
-            setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I encountered an error. Please try again." }]);
+            setMessages((prev) => [...prev, { role: "assistant", content: "Xin lỗi, tôi đã gặp lỗi không xác định. Vui lòng thử lại." }]);
         } finally {
             setIsLoading(false);
         }
@@ -80,34 +85,34 @@ export default function AIAdvisorPage() {
                 {/* Sidebar */}
                 <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col p-4">
                     <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white gap-2 mb-6">
-                        <Plus className="w-4 h-4" /> New Chat
+                        <Plus className="w-4 h-4" /> Cuộc trò chuyện mới
                     </Button>
 
                     <div className="flex-1 overflow-y-auto space-y-6">
                         <div>
-                            <h3 className="text-xs font-semibold text-gray-400 mb-3 px-2">TODAY</h3>
+                            <h3 className="text-xs font-semibold text-gray-400 mb-3 px-2">HÔM NAY</h3>
                             <div className="space-y-1">
                                 <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 rounded-lg flex items-center gap-2">
                                     <MessageSquare className="w-4 h-4 text-orange-400" />
-                                    <span className="truncate">Suggestion for &lt; 400 cal meal</span>
+                                    <span className="truncate">Gợi ý bữa ăn dưới 400 calo</span>
                                 </button>
                                 <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
                                     <MessageSquare className="w-4 h-4 text-gray-400" />
-                                    <span className="truncate">Benefits of brown rice</span>
+                                    <span className="truncate">Lợi ích của gạo lứt</span>
                                 </button>
                             </div>
                         </div>
 
                         <div>
-                            <h3 className="text-xs font-semibold text-gray-400 mb-3 px-2">7 DAYS AGO</h3>
+                            <h3 className="text-xs font-semibold text-gray-400 mb-3 px-2">7 NGÀY TRƯỚC</h3>
                             <div className="space-y-1">
                                 <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
                                     <MessageSquare className="w-4 h-4 text-gray-400" />
-                                    <span className="truncate">Eat clean menu</span>
+                                    <span className="truncate">Thực đơn ăn sạch (Eat clean)</span>
                                 </button>
                                 <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
                                     <MessageSquare className="w-4 h-4 text-gray-400" />
-                                    <span className="truncate">High protein vegetarian</span>
+                                    <span className="truncate">Món chay giàu protein</span>
                                 </button>
                             </div>
                         </div>
@@ -119,7 +124,7 @@ export default function AIAdvisorPage() {
 
                     {/* Chat Header (Mobile Only) */}
                     <div className="md:hidden p-4 border-b bg-white flex items-center justify-between">
-                        <span className="font-bold text-gray-700">AI Nutrition Assistant</span>
+                        <span className="font-bold text-gray-700">Trợ lý Dinh dưỡng AI</span>
                         <Button size="icon" variant="ghost">
                             <Plus className="w-5 h-5" />
                         </Button>
@@ -133,16 +138,16 @@ export default function AIAdvisorPage() {
                             {messages.length === 0 && (
                                 <div className="space-y-8 py-8 animate-in fade-in duration-500">
                                     <h1 className="text-3xl font-bold text-gray-300">
-                                        Hello User! <br />
-                                        <span className="text-gray-400">How can I help you today?</span>
+                                        Xin chào! <br />
+                                        <span className="text-gray-400">Tôi có thể giúp gì cho bạn hôm nay?</span>
                                     </h1>
 
                                     <div className="grid md:grid-cols-2 gap-4">
                                         {[
-                                            { title: "Quick Lunch Suggestion", desc: "Under 500 cal, high protein" },
-                                            { title: "Post-workout Meal", desc: "Recovery energy needed" },
-                                            { title: "Find tasty vegetarian food", desc: "Gluten free, lots of greens" },
-                                            { title: "Analyze Meal", desc: "Upload photo to calculate calories" }
+                                            { title: "Gợi ý bữa trưa nhanh", desc: "Dưới 500 calo, giàu đạm" },
+                                            { title: "Bữa ăn sau tập luyện", desc: "Cần năng lượng phục hồi" },
+                                            { title: "Tìm món chay ngon", desc: "Không gluten, nhiều rau" },
+                                            { title: "Phân tích bữa ăn", desc: "Tải ảnh lên để tính calo" }
                                         ].map((card, idx) => (
                                             <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 hover:border-orange-200 hover:shadow-md transition-all cursor-pointer group" onClick={() => setInput(card.title)}>
                                                 <h3 className="font-semibold text-gray-800 group-hover:text-orange-600">{card.title}</h3>
@@ -174,13 +179,13 @@ export default function AIAdvisorPage() {
                                         {msg.role === "assistant" && (
                                             <div className="flex items-center gap-3 mt-4 pt-2 border-t border-gray-50">
                                                 <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600">
-                                                    <ThumbsUp className="w-3 h-3" /> Helpful
+                                                    <ThumbsUp className="w-3 h-3" /> Hữu ích
                                                 </button>
                                                 <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600">
-                                                    <ThumbsDown className="w-3 h-3" /> Not helpful
+                                                    <ThumbsDown className="w-3 h-3" /> Không hữu ích
                                                 </button>
                                                 <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-orange-500 ml-auto">
-                                                    <RotateCcw className="w-3 h-3" /> Regenerate
+                                                    <RotateCcw className="w-3 h-3" /> Tạo lại
                                                 </button>
                                             </div>
                                         )}
@@ -218,7 +223,7 @@ export default function AIAdvisorPage() {
                             {/* Quick Actions (Suggestion chips) */}
                             {messages.length > 0 && !isLoading && (
                                 <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar mask-gradient">
-                                    {["Add more greens", "Cheaper alternative", "No spicy"].map((chip) => (
+                                    {["Thêm nhiều rau", "Lựa chọn rẻ hơn", "Không cay"].map((chip) => (
                                         <button
                                             key={chip}
                                             onClick={() => {
@@ -242,7 +247,7 @@ export default function AIAdvisorPage() {
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Ask SmartBite about nutrition or order food..."
+                                    placeholder="Hỏi SmartBite về dinh dưỡng hoặc gọi món..."
                                     className="flex-1 bg-transparent border-none focus:ring-0 resize-none max-h-32 py-2.5 text-gray-700 placeholder:text-gray-400"
                                     rows={1}
                                     style={{ height: 'auto', minHeight: '44px' }}
@@ -263,7 +268,7 @@ export default function AIAdvisorPage() {
                                 </Button>
                             </div>
                             <div className="text-center mt-2">
-                                <p className="text-[10px] text-gray-400">SmartBite AI may display inaccurate info, please double check important nutrition facts.</p>
+                                <p className="text-[10px] text-gray-400">SmartBite AI có thể hiển thị thông tin chưa chính xác, vui lòng kiểm tra lại các sự thật dinh dưỡng quan trọng.</p>
                             </div>
                         </div>
                     </div>

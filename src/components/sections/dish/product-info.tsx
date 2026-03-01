@@ -84,7 +84,7 @@ export function ProductInfo({
                             <h3>SmartBite AI Review</h3>
                         </div>
 
-                        <p
+                        <div
                             className="text-sm text-gray-700 mb-4"
                             dangerouslySetInnerHTML={{ __html: aiAnalysis.text }}
                         />

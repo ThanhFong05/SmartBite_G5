@@ -23,13 +23,13 @@ export function Footer() {
                             Smart food ordering platform with AI nutrition advice, helping you eat well every day.
                         </p>
                         <div className="flex gap-4">
-                            <Link href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                            <Link href="https://www.facebook.com/tfonghjhj" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
                                 <Facebook className="w-4 h-4" />
                             </Link>
-                            <Link href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                            <Link href="https://www.instagram.com/_tfongg_/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
                                 <Instagram className="w-4 h-4" />
                             </Link>
-                            <Link href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                            <Link href="https://www.facebook.com/tfonghjhj" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
                                 <Twitter className="w-4 h-4" />
                             </Link>
                         </div>
@@ -39,10 +39,10 @@ export function Footer() {
                     <div>
                         <h3 className="text-white font-bold mb-4">Quick Links</h3>
                         <ul className="space-y-2 text-sm">
-                            <li><Link href="#" className="hover:text-primary transition-colors">Menu</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">AI Advisor</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Orders</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Profile</Link></li>
+                            <li><Link href="/menu" className="hover:text-primary transition-colors">Menu</Link></li>
+                            <li><Link href="/ai-advisor" className="hover:text-primary transition-colors">AI Advisor</Link></li>
+                            <li><Link href="/profile/history" className="hover:text-primary transition-colors">Orders</Link></li>
+                            <li><Link href="/profile" className="hover:text-primary transition-colors">Profile</Link></li>
                         </ul>
                     </div>
 
@@ -50,10 +50,10 @@ export function Footer() {
                     <div>
                         <h3 className="text-white font-bold mb-4">Support</h3>
                         <ul className="space-y-2 text-sm">
-                            <li><Link href="#" className="hover:text-primary transition-colors">FAQ</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Terms of Use</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Contact</Link></li>
+                            <li><Link href="https://www.facebook.com/tfonghjhj" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">FAQ</Link></li>
+                            <li><Link href="https://www.facebook.com/tfonghjhj" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="https://www.facebook.com/tfonghjhj" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Terms of Use</Link></li>
+                            <li><Link href="https://www.facebook.com/tfonghjhj" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Contact</Link></li>
                         </ul>
                     </div>
 
@@ -71,7 +71,7 @@ export function Footer() {
                             </li>
                             <li className="flex items-center gap-3">
                                 <Mail className="w-5 h-5 text-primary shrink-0" />
-                                <span>smartbite@gmail.com</span>
+                                <span>admin123@gmail.com</span>
                             </li>
                         </ul>
                     </div>

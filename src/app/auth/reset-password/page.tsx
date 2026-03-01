@@ -50,26 +50,18 @@ function ResetPasswordForm() {
         setIsLoading(true);
 
         try {
-            // Verify OTP via API
+            // Verify OTP and Update Password via API
             const res = await fetch("/api/auth/reset-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, otp }),
+                body: JSON.stringify({ email, otp, newPassword }),
             });
 
             const data = await res.json();
 
             if (res.ok && data.success) {
-                // Update password in localStorage
-                const registeredUsersStr = localStorage.getItem("registeredUsers");
-                if (registeredUsersStr) {
-                    const registeredUsers = JSON.parse(registeredUsersStr);
-                    if (registeredUsers[email]) {
-                        // Normally you'd hash this. For local storage mock, we just proceed.
-                        registeredUsers[email].password = newPassword;
-                        localStorage.setItem("registeredUsers", JSON.stringify(registeredUsers));
-                    }
-                }
+                // Logic cập nhật password giờ đã được thực hiện ở Server (API) 
+                // thông qua Supabase Admin API thay vì localStorage.
 
                 setSuccess("Password changed successfully! Redirecting to login page...");
                 setTimeout(() => {
