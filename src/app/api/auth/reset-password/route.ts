@@ -25,7 +25,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: 'Invalid OTP' }, { status: 400 });
         }
 
-        // Cập nhật mật khẩu trong Supabase Auth dùng Admin API
+        
         const supabaseAdmin = await createAdminClient();
 
         if (!record.userid) {
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: 'Failed to update password in Auth: ' + authError.message }, { status: 500 });
         }
 
-        // Clean up the OTP
+        
         delete otpStorage[email];
 
         return NextResponse.json({ success: true, message: 'Password updated successfully' });

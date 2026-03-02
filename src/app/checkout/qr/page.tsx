@@ -14,7 +14,7 @@ export default function QRPaymentPage() {
     const router = useRouter()
     const [cartItems, setCartItems] = useState<any[]>([])
     const [isMounted, setIsMounted] = useState(false)
-    const [timeLeft, setTimeLeft] = useState(599) // 9:59 in seconds
+    const [timeLeft, setTimeLeft] = useState(599) 
     const [orderId, setOrderId] = useState("")
     const [isCheckingPayment, setIsCheckingPayment] = useState(false)
     const [paymentSuccess, setPaymentSuccess] = useState(false)
@@ -22,14 +22,14 @@ export default function QRPaymentPage() {
     useEffect(() => {
         setIsMounted(true)
 
-        // Check Auth
+        
         const userStr = localStorage.getItem("user");
         if (!userStr) {
             router.push("/auth/login");
             return;
         }
 
-        // Get OrderId from URL
+        
         const params = new URLSearchParams(window.location.search);
         const urlOrderId = params.get('orderId');
 
@@ -37,13 +37,13 @@ export default function QRPaymentPage() {
             setOrderId(urlOrderId);
             fetchOrderDetails(urlOrderId);
         } else {
-            // Fallback nếu không có ID (có thể quay lại cart)
-            // router.push("/cart");
-            // Để mock tạm thời nếu cần
+            
+            
+            
             setOrderId(`#SB-${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`);
         }
 
-        // Countdown timer
+        
         const timer = setInterval(() => {
             setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
         }, 1000)
@@ -58,7 +58,7 @@ export default function QRPaymentPage() {
                 const data = await res.json();
                 if (data.order) {
                     const orderData = data.order;
-                    // Map items từ DB sang UI format (tương tự trang cart)
+                    
                     const formatted = orderData.orderitems?.map((oi: any) => ({
                         id: oi.orderitemid,
                         title: oi.fooditems?.foodname,
@@ -78,7 +78,7 @@ export default function QRPaymentPage() {
         setIsCheckingPayment(true)
 
         try {
-            // Gọi API xác nhận thanh toán trên DB
+            
             const res = await fetch("/api/payments", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -92,12 +92,12 @@ export default function QRPaymentPage() {
                 setPaymentSuccess(true);
                 setIsCheckingPayment(false);
 
-                // Đồng bộ Navbar (vì giỏ hàng đã được làm sạch trên DB)
+                
                 window.dispatchEvent(new Event('cartUpdate'));
 
-                // Redirect sau 2 giây
+                
                 setTimeout(() => {
-                    // Chuyển hướng đến trang tracking
+                    
                     router.push(`/order/${orderId}`);
                 }, 2000);
             } else {
@@ -135,7 +135,7 @@ export default function QRPaymentPage() {
             <Navbar />
 
             <main className="flex-grow container mx-auto px-4 py-8 max-w-5xl">
-                {/* Breadcrumb */}
+                
                 <div className="text-sm font-medium text-gray-500 mb-8 flex items-center gap-2">
                     <Link href="/" className="hover:text-orange-500 transition-colors">Home</Link>
                     <span>/</span>
@@ -145,13 +145,13 @@ export default function QRPaymentPage() {
                 </div>
 
                 <div className="grid lg:grid-cols-12 gap-8">
-                    {/* Left Column - QR Instructions */}
+                    
                     <div className="lg:col-span-7 space-y-6">
                         <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-sm border border-orange-50/50 flex flex-col items-center flex-grow">
                             <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">Scan QR to Pay</h1>
                             <p className="text-gray-500 text-center mb-8">Use Momo, VNPay or your Bank app</p>
 
-                            {/* Timer */}
+                            
                             <div className="flex items-center justify-center gap-4 mb-10">
                                 <div className="text-center">
                                     <div className="w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center text-2xl font-bold text-orange-500 shadow-sm border border-orange-100">
@@ -168,7 +168,7 @@ export default function QRPaymentPage() {
                                 </div>
                             </div>
 
-                            {/* QR Code Area */}
+                            
                             <div className="w-64 md:w-72 bg-white rounded-3xl shadow-xl border-4 border-white overflow-hidden mb-10 relative">
                                 <img
                                     src="/images/bidvqr.jpg"
@@ -177,7 +177,7 @@ export default function QRPaymentPage() {
                                 />
                             </div>
 
-                            {/* Action Buttons */}
+                            
                             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
                                 <Button variant="outline" className="flex-1 h-12 rounded-xl border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 hover:text-orange-700 font-bold shadow-sm" disabled={isCheckingPayment || paymentSuccess}>
                                     <Download className="w-4 h-4 mr-2" />
@@ -211,16 +211,16 @@ export default function QRPaymentPage() {
                             </div>
                         </div>
 
-                        {/* Security Badge */}
+                        
                         <div className="bg-orange-50/50 rounded-2xl p-5 border border-orange-100 flex items-center gap-4">
                             <ShieldCheck className="w-8 h-8 text-orange-500 flex-shrink-0" />
                             <p className="text-sm text-gray-600 font-medium">Your transaction is completely secured by our integrated payment system.</p>
                         </div>
                     </div>
 
-                    {/* Right Column - Order Summary & Support */}
+                    
                     <div className="lg:col-span-5 space-y-6">
-                        {/* Order Summary */}
+                        
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                             <div className="flex items-center gap-2 mb-6 border-b border-gray-50 pb-4">
                                 <ReceiptText className="w-5 h-5 text-orange-500" />
@@ -240,7 +240,7 @@ export default function QRPaymentPage() {
 
                             <Separator className="my-6 border-dashed" />
 
-                            {/* Item List */}
+                            
                             <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
                                 {cartItems.map((item) => (
                                     <div key={item.id} className="flex gap-3 items-center">
@@ -267,7 +267,7 @@ export default function QRPaymentPage() {
 
                             <Separator className="my-6 border-dashed" />
 
-                            {/* Pricing Summary */}
+                            
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Subtotal</span>
@@ -285,7 +285,7 @@ export default function QRPaymentPage() {
                             </div>
                         </div>
 
-                        {/* Support Block */}
+                        
                         <div className="bg-orange-50/30 rounded-3xl p-6 border border-orange-50">
                             <h3 className="font-bold text-gray-900 mb-2">Need help?</h3>
                             <p className="text-sm text-gray-500 mb-4 leading-relaxed">

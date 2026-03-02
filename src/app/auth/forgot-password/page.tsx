@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
             const data = await res.json();
 
             if (res.ok) {
-                // Pass email to reset page via query param for convenience
+                
                 router.push(`/auth/reset-password?email=${encodeURIComponent(normalizedEmail)}`);
             } else {
                 if (res.status === 404) {

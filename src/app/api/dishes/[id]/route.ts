@@ -12,7 +12,7 @@ export async function GET(
         const params = await props.params;
         const id = params.id;
 
-        // Fetch dish
+        
         const { data: dish, error } = await supabase
             .from('fooditems')
             .select(`
@@ -26,7 +26,7 @@ export async function GET(
             return NextResponse.json({ error: 'Dish not found' }, { status: 404 });
         }
 
-        // Fetch toppings
+        
         const { data: toppings } = await supabase
             .from('foodtoppings')
             .select(`
@@ -38,10 +38,10 @@ export async function GET(
             id: t.toppingoptions.toppingid,
             name: t.toppingoptions.toppingname,
             price: t.toppingoptions.price.toLocaleString('vi-VN') + " đ",
-            rawPrice: t.toppingoptions.price // Để Frontend dễ tính toán hơn
+            rawPrice: t.toppingoptions.price 
         })) || [];
 
-        // Fetch ratings statistics
+        
         const { data: ratingStats } = await supabase
             .from('foodreviews')
             .select('rating')
@@ -52,7 +52,7 @@ export async function GET(
             ? Number((ratingStats!.reduce((acc, curr) => acc + curr.rating, 0) / reviewCount).toFixed(1))
             : 5;
 
-        // Map back to frontend format
+        
         const metadata = dish.ingredients ? JSON.parse(dish.ingredients) : {};
         const formattedDish = {
             id: dish.foodid,
@@ -90,7 +90,7 @@ export async function DELETE(
         const supabase = await createClient();
         const { id } = await props.params;
 
-        // Thay vì xóa, chúng ta cập nhật trạng thái thành 'Unavailable' (Ngừng kinh doanh)
+        
         const { error: updateError } = await supabase
             .from('fooditems')
             .update({ foodstatus: 'Unavailable' })
@@ -118,7 +118,7 @@ export async function PUT(
         const id = params.id;
         const dish = await request.json();
 
-        // 1. Clean and format data
+        
         const rawPrice = typeof dish.price === 'string'
             ? parseInt(dish.price.replace(/[^\d]/g, ''))
             : dish.price;
@@ -138,7 +138,7 @@ export async function PUT(
             flavors: dish.flavors
         };
 
-        // 2. Update FoodItems record
+        
         const { error: foodError } = await supabase
             .from('fooditems')
             .update({
@@ -157,9 +157,9 @@ export async function PUT(
 
         if (foodError) throw foodError;
 
-        // 3. Update Toppings (similar to POST but delete old links first)
+        
         if (dish.extras && Array.isArray(dish.extras)) {
-            // Delete old links
+            
             await supabase
                 .from('foodtoppings')
                 .delete()
@@ -173,12 +173,12 @@ export async function PUT(
                     ? parseInt(extra.price.replace(/[^\d]/g, '')) || 0
                     : extra.price || 0;
 
-                // Upsert topping option
+                
                 await supabase
                     .from('toppingoptions')
                     .upsert([{ toppingid: toppingId, toppingname: extra.name, price: toppingPrice }], { onConflict: 'toppingid' });
 
-                // Link topping to food
+                
                 await supabase
                     .from('foodtoppings')
                     .upsert([{ foodid: id, toppingid: toppingId }], { onConflict: 'foodid,toppingid' });

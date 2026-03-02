@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
-// POST /api/orders: Tạo đơn hàng mới từ giỏ hàng
+
 export async function POST(request: Request) {
     try {
         const supabase = await createClient();
         const body = await request.json();
-        const { userid, shippingaddress, totalprice, paymentmethod } = body;
+        const { userid, shippingaddress, totalprice, paymentmethod, vouchercode } = body;
 
         if (!userid) {
             return NextResponse.json({ error: 'Missing userid' }, { status: 400 });
         }
 
-        // 1. Lấy CartId của User
+        
         const { data: cart, error: cartError } = await supabase
             .from('carts')
             .select('cartid')
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Cart not found or empty' }, { status: 404 });
         }
 
-        // 2. Lấy danh sách CartItems, kèm giá món chính và các topping (kèm giá topping)
+        
         const { data: cartItems, error: itemsError } = await supabase
             .from('cartitems')
             .select(`
@@ -37,14 +37,62 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
         }
 
-        // 3. Tạo bản ghi Order mới
+        
         const orderId = `ord-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-        // Frontend sends totalprice = subtotal + 15000 (shipping)
-        // Since database calculates finalamount = foodamount + shippingfee, 
-        // we must subtract shipping fee from totalprice to get true foodamount
+        
+        
+        
         const shippingFee = 15000;
         const computedFoodAmount = (totalprice || 0) > shippingFee ? (totalprice - shippingFee) : (totalprice || 0);
+
+        
+        let appliedVoucherId = null;
+        if (vouchercode) {
+            const { data: voucherData, error: vErr } = await supabase
+                .from('vouchers')
+                .select('voucherid, maxusage, isactive')
+                .eq('vouchercode', vouchercode)
+                .single();
+
+            if (vErr || !voucherData) {
+                return NextResponse.json({ error: 'Mã giảm giá không tồn tại' }, { status: 400 });
+            }
+
+            if (voucherData.isactive !== 1 || (voucherData.maxusage !== null && voucherData.maxusage <= 0)) {
+                return NextResponse.json({ error: 'Mã giảm giá đã hết hạn hoặc hết lượt sử dụng' }, { status: 400 });
+            }
+
+            
+            const { count: usageCount, error: usageErr } = await supabase
+                .from('orders')
+                .select('orderid', { count: 'exact', head: true })
+                .eq('userid', userid)
+                .eq('voucherid', voucherData.voucherid);
+
+            if (!usageErr && usageCount && usageCount > 0) {
+                return NextResponse.json({ error: 'Bạn đã sử dụng mã giảm giá này rồi' }, { status: 400 });
+            }
+
+            appliedVoucherId = voucherData.voucherid;
+
+            
+            let updates: any = {};
+            if (voucherData.maxusage && voucherData.maxusage > 0) {
+                updates.maxusage = voucherData.maxusage - 1;
+                if (updates.maxusage === 0) {
+                    updates.isactive = 0; 
+                }
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await supabase
+                    .from('vouchers')
+                    .update(updates)
+                    .eq('voucherid', appliedVoucherId);
+            }
+        }
+        
 
         const { error: orderError } = await supabase
             .from('orders')
@@ -53,21 +101,22 @@ export async function POST(request: Request) {
                 userid: userid,
                 foodamount: computedFoodAmount,
                 shippingfee: shippingFee,
-                orderstatus: 1,              // SMALLINT 1 (Pending)
+                orderstatus: 1,              
                 deliveryaddress: shippingaddress || 'Chưa cập nhật',
-                ordertime: new Date().toISOString()
+                ordertime: new Date().toISOString(),
+                voucherid: appliedVoucherId
             }]);
 
         if (orderError) throw orderError;
 
-        // 4. Chuyển CartItems sang OrderItems và OrderItemToppings
+        
         const orderItemsInserts: any[] = [];
         const orderItemToppingsInserts: any[] = [];
 
         for (const item of cartItems) {
             const orderItemId = `oi-${Math.random().toString(36).substring(2, 9)}`;
 
-            // Tính giá của các topping
+            
             let extraPrice = 0;
             if (item.cartitemtoppings && Array.isArray(item.cartitemtoppings)) {
                 for (const t of item.cartitemtoppings) {
@@ -83,8 +132,8 @@ export async function POST(request: Request) {
                 }
             }
 
-            // UnitPrice trong bản ghi orderitems nên là giá base (theo request thiết kế chuẩn), 
-            // hoặc base + extra. Ở đây lưu giá base để rành mạch hóa đơn.
+            
+            
             orderItemsInserts.push({
                 orderitemid: orderItemId,
                 orderid: orderId,
@@ -107,7 +156,7 @@ export async function POST(request: Request) {
             if (insertToppingsError) throw insertToppingsError;
         }
 
-        // 5. Khởi tạo Payment
+        
         const paymentId = `pay-${Math.random().toString(36).substring(2, 9)}`;
         const { error: paymentError } = await supabase
             .from('payments')
@@ -122,11 +171,26 @@ export async function POST(request: Request) {
 
         if (paymentError) throw paymentError;
 
-        // 6. Xóa CartItems (Làm sạch giỏ hàng)
-        await supabase
-            .from('cartitems')
+        
+        
+        
+        const cartItemIds = cartItems.map((item: any) => item.cartitemid);
+
+        if (cartItemIds.length > 0) {
+            await supabase.from('cartitemtoppings').delete().in('cartitemid', cartItemIds);
+        }
+
+        await supabase.from('cartitems').delete().eq('cartid', cart.cartid);
+
+        const { error: deleteCartRecordError } = await supabase
+            .from('carts')
             .delete()
             .eq('cartid', cart.cartid);
+
+        if (deleteCartRecordError) {
+            console.error("Cart record deletion error:", deleteCartRecordError);
+        }
+
 
         return NextResponse.json({ success: true, orderId });
 
@@ -136,7 +200,7 @@ export async function POST(request: Request) {
     }
 }
 
-// GET /api/orders: Lấy danh sách đơn hàng (Cho Admin hoặc User)
+
 export async function GET(request: Request) {
     try {
         const supabase = await createClient();

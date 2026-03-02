@@ -16,7 +16,7 @@ interface CustomizationOptionsProps {
 }
 
 export function CustomizationOptions({ extras, selectedExtras, onToggleExtra }: CustomizationOptionsProps) {
-    // If no extras, don't render anything
+    
     if (!extras || extras.length === 0) return null;
 
     return (

@@ -5,14 +5,14 @@ export async function GET() {
     try {
         const supabase = await createClient();
 
-        // Define default categories
+        
         const categories = [
             { categoryid: 'food', categoryname: 'Food' },
             { categoryid: 'drinks', categoryname: 'Drinks' },
             { categoryid: 'dessert', categoryname: 'Dessert' }
         ];
 
-        // Upsert categories into the 'categories' table
+        
         const { data, error } = await supabase
             .from('categories')
             .upsert(categories, { onConflict: 'categoryid' })

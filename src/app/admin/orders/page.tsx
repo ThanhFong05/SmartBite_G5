@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 export default function OrderManagement() {
     const [orders, setOrders] = useState<any[]>([])
 
-    // Poll for new orders from API
+    
     useEffect(() => {
         const loadOrders = async () => {
             try {
@@ -16,10 +16,10 @@ export default function OrderManagement() {
                     const data = await res.json();
                     const localOrders = data.orders || [];
 
-                    // Log để debug (có thể xóa sau khi fix xong)
-                    // console.log("Raw orders from API:", localOrders.map(o => ({ id: o.orderid, st: o.orderstatus })));
+                    
+                    
 
-                    // Map DB format to UI format
+                    
                     const formatted = localOrders.map((o: any) => {
                         const statusMap: Record<number, string> = {
                             1: 'pending',
@@ -32,7 +32,7 @@ export default function OrderManagement() {
                         const rawStatus = Number(o.orderstatus);
                         const status = statusMap[rawStatus] || 'pending';
 
-                        // Lấy paymentStatus từ payments (Supabase có thể trả về mảng hoặc đối tượng)
+                        
                         const paymentInfo = Array.isArray(o.payments) ? (o.payments.length > 0 ? o.payments[0] : null) : o.payments;
                         const pStatus = paymentInfo?.paymentstatus || 'pending';
 
@@ -60,7 +60,7 @@ export default function OrderManagement() {
 
         loadOrders()
 
-        // Poll every 5 seconds for new orders
+        
         const interval = setInterval(loadOrders, 5000)
 
         return () => clearInterval(interval)
@@ -75,16 +75,16 @@ export default function OrderManagement() {
             });
 
             if (res.ok) {
-                // Update local state for immediate feedback
+                
                 setOrders(prev => prev.map(order => order.id === id ? { ...order, status: newStatus } : order));
-                // Reload from server to be sure
+                
                 const refreshRes = await fetch('/api/orders', { cache: 'no-store' });
                 if (refreshRes.ok) {
                     const data = await refreshRes.json();
                     const localOrders = data.orders || [];
-                    // ... same mapping as useEffect ...
-                    // Short version for refresh:
-                    window.location.reload(); // Quickest way to sync all state including status Map
+                    
+                    
+                    window.location.reload(); 
                 }
             } else {
                 const errData = await res.json();
@@ -118,8 +118,8 @@ export default function OrderManagement() {
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr className="bg-gray-50/50 text-gray-500 text-sm font-semibold border-b border-gray-100">
-                                <th className="px-6 py-4 rounded-tl-xl whitespace-nowrap">Order ID</th>
-                                <th className="px-6 py-4 whitespace-nowrap">Customer</th>
+                                <th className="px-6 py-4 rounded-tl-xl whitespace-nowrap">Customer</th>
+
                                 <th className="px-6 py-4 whitespace-nowrap">Items</th>
                                 <th className="px-6 py-4 whitespace-nowrap">Price</th>
                                 <th className="px-6 py-4 whitespace-nowrap">Time</th>
@@ -130,9 +130,7 @@ export default function OrderManagement() {
                         <tbody className="divide-y divide-gray-50">
                             {orders.map((order) => (
                                 <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-6 py-5">
-                                        <span className="font-bold text-gray-900">{order.id}</span>
-                                    </td>
+
                                     <td className="px-6 py-5">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">

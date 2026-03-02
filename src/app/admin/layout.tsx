@@ -37,7 +37,7 @@ export default function AdminLayout({
 
     return (
         <div className="flex min-h-screen bg-[#FDFDFD]">
-            {/* Sidebar */}
+            
             <aside className="fixed left-0 top-0 z-40 h-screen w-72 bg-white border-r border-gray-100 hidden lg:flex flex-col">
                 <div className="p-6">
                     <Link href="/admin" className="flex items-center gap-3 mb-10">
@@ -140,9 +140,9 @@ export default function AdminLayout({
                 </div>
             </aside>
 
-            {/* Main Content */}
+            
             <div className="lg:ml-72 flex-1 flex flex-col min-h-screen">
-                {/* Header */}
+                
                 <header className="bg-white px-8 py-5 flex items-center justify-between border-b border-gray-50 sticky top-0 z-30">
                     <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
 

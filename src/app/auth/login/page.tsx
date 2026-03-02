@@ -35,9 +35,9 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                // Đăng nhập thành công! KHÔNG kiểm tra localStorage nữa.
+                
 
-                // Lưu state tạm thời cho Navbar (Header) lấy dữ liệu hiển thị
+                
                 if (data.role === 'admin') {
                     localStorage.setItem("user", JSON.stringify({
                         userid: data.user?.userid,
@@ -56,7 +56,7 @@ export default function LoginPage() {
                         addressdelivery: data.user?.addressdelivery,
                     }));
                     window.dispatchEvent(new Event("authChange"));
-                    router.push("/"); // Chuyển về trang chủ
+                    router.push("/"); 
                 }
             } else {
                 setError(data.error || "Login failed");
@@ -85,12 +85,12 @@ export default function LoginPage() {
 
     return (
         <div className="flex min-h-screen w-full items-center justify-center bg-[#FFF8F3] p-4 lg:p-8">
-            {/* Main Container Card */}
+            
             <div className="flex w-full max-w-6xl overflow-hidden rounded-[2rem] bg-white shadow-xl lg:flex-row flex-col">
 
-                {/* Left Section - Image & Branding */}
+                
                 <div className="relative w-full lg:w-1/2 p-12 bg-orange-50 flex flex-col items-center justify-center text-center">
-                    {/* Background Gradient Effect - subtle orange glow */}
+                    
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-100/50 to-transparent"></div>
 
                     <div className="relative z-10 w-full max-w-md space-y-8">
@@ -114,7 +114,7 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Right Section - Login Form */}
+                
                 <div className="flex w-full lg:w-1/2 flex-col justify-center p-12 lg:p-16 relative">
                     <div className="mx-auto w-full max-w-md space-y-8">
 

@@ -8,7 +8,7 @@ export function AISection() {
             <div className="container mx-auto px-4">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
 
-                    {/* Left Content */}
+                    
                     <div className="space-y-6">
                         <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-500 px-4 py-1.5 rounded-full text-sm font-medium">
                             <Sparkles className="h-4 w-4" />
@@ -33,12 +33,12 @@ export function AISection() {
                         </Button>
                     </div>
 
-                    {/* Right Content - Chat UI */}
+                    
                     <div className="relative">
                         <div className="absolute -inset-4 bg-orange-500/20 blur-3xl rounded-full" />
 
                         <div className="relative bg-white rounded-2xl p-6 shadow-2xl max-w-md mx-auto">
-                            {/* Chat Header */}
+                            
                             <div className="flex items-center gap-3 border-b border-gray-100 pb-4 mb-4">
                                 <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-primary">
                                     <Bot className="w-6 h-6" />
@@ -55,9 +55,9 @@ export function AISection() {
                                 </div>
                             </div>
 
-                            {/* Chat Messages */}
+                            
                             <div className="space-y-4 mb-6">
-                                {/* Bot Message */}
+                                
                                 <div className="flex gap-3">
                                     <div className="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center flex-shrink-0 text-primary mt-1">
                                         <Bot className="w-4 h-4" />
@@ -67,14 +67,14 @@ export function AISection() {
                                     </div>
                                 </div>
 
-                                {/* User Message */}
+                                
                                 <div className="flex gap-3 justify-end">
                                     <div className="bg-primary p-3 rounded-2xl rounded-tr-none text-sm text-white">
                                         I want to lose weight, suggest low-calorie dishes.
                                     </div>
                                 </div>
 
-                                {/* Bot Message with recommendation */}
+                                
                                 <div className="flex gap-3">
                                     <div className="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center flex-shrink-0 text-primary mt-1">
                                         <Bot className="w-4 h-4" />
@@ -85,7 +85,7 @@ export function AISection() {
                                 </div>
                             </div>
 
-                            {/* Input Area */}
+                            
                             <div className="relative">
                                 <input
                                     type="text"

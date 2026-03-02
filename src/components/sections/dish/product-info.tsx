@@ -36,7 +36,7 @@ export function ProductInfo({
 }: ProductInfoProps) {
     return (
         <div className="flex flex-col gap-6">
-            {/* Header */}
+            
             <div>
                 <div className="flex justify-between items-start">
                     <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
@@ -67,13 +67,13 @@ export function ProductInfo({
                 </div>
             </div>
 
-            {/* Description */}
+            
             <p className="text-gray-600 leading-relaxed">{description}</p>
 
-            {/* SmartBite AI Analysis */}
+            
             {aiAnalysis && (
                 <div className="bg-orange-50 rounded-2xl p-6 relative overflow-hidden">
-                    {/* Decorative background element if needed */}
+                    
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Sparkles className="w-24 h-24 text-orange-500" />
                     </div>

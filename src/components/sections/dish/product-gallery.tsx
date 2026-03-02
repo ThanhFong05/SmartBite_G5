@@ -12,7 +12,7 @@ export function ProductGallery({ images }: ProductGalleryProps) {
 
     return (
         <div className="flex flex-col gap-4">
-            {/* Main Image */}
+            
             <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl bg-gray-100 relative group">
                 <div className="absolute top-4 left-4 z-10">
                     <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
@@ -33,7 +33,7 @@ export function ProductGallery({ images }: ProductGalleryProps) {
                 </button>
             </div>
 
-            {/* Thumbnails */}
+            
             <div className="grid grid-cols-4 gap-4">
                 {images.map((image, index) => (
                     <button
@@ -53,7 +53,7 @@ export function ProductGallery({ images }: ProductGalleryProps) {
                         />
                     </button>
                 ))}
-                {/* Placeholder for +2 images if we had more, mimicking the design */}
+                
                 {images.length > 3 && (
                     <div className="aspect-square rounded-xl bg-gray-50 flex items-center justify-center text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors">
                         +{images.length - 3} images

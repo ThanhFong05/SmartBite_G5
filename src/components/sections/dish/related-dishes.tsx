@@ -13,7 +13,7 @@ const relatedDishes = [
         price: "65.000 đ",
         tag: "Popular",
         tagColor: "bg-orange-500",
-        image: "/images/bunbohue.jpg" // Placeholder
+        image: "/images/bunbohue.jpg" 
     },
     {
         title: "Grilled Chicken Burger",
@@ -24,7 +24,7 @@ const relatedDishes = [
         price: "59.000 đ",
         tag: "New",
         tagColor: "bg-green-500",
-        image: "/images/burger.jpg" // Placeholder
+        image: "/images/burger.jpg" 
     },
     {
         title: "Chicken Caesar Salad",
@@ -34,7 +34,7 @@ const relatedDishes = [
         time: "10 mins",
         price: "85.000 đ",
         tag: null,
-        image: "/images/caesar.jpg" // Placeholder
+        image: "/images/caesar.jpg" 
     },
     {
         title: "Avocado Quinoa Salad",
@@ -45,7 +45,7 @@ const relatedDishes = [
         price: "90.000 đ",
         tag: "Vegan",
         tagColor: "bg-purple-500",
-        image: "/images/quinoa.jpg" // Placeholder
+        image: "/images/quinoa.jpg" 
     },
 ]
 
@@ -57,12 +57,8 @@ export function RelatedDishes({ currentDishId }: { currentDishId?: string }) {
                 {relatedDishes.map((dish: any, index) => (
                     <Card key={index} className={`overflow-hidden bg-white hover:shadow-lg transition-all duration-300 border-gray-100 group cursor-pointer ${dish.foodstatus === "Out of Stock" ? "grayscale opacity-60" : ""}`}>
                         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                            <div className="absolute inset-0 bg-gray-200 animate-pulse" /> {/* Placeholder pending real images */}
-                            {/*  <img 
-                                src={dish.image} 
-                                alt={dish.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            /> */}
+                            <div className="absolute inset-0 bg-gray-200 animate-pulse" /> 
+                            
                             {dish.tag && (
                                 <Badge className={`absolute top-3 left-3 ${dish.tagColor} border-none text-white z-10`}>
                                     {dish.tag}

@@ -6,7 +6,7 @@ export async function POST() {
     const cookieStore = await cookies();
     cookieStore.delete('admin_token');
 
-    // Đăng xuất khỏi Supabase (xóa cookies session)
+    
     const supabase = await createClient();
     await supabase.auth.signOut();
 

@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 
 import dishesData from "@/data/dishes.json"
 
-// Map the JSON data to the component's expected format if needed, or update the component to use the JSON structure directly.
-// The JSON structure matches closely.
-const dishes = dishesData.map(dish => ({
+
+
+const dishes = (dishesData as any[]).map((dish) => ({
     ...dish,
     image: (
         <img

@@ -25,7 +25,7 @@ import {
     Clock,
 } from "lucide-react";
 
-// Types
+
 type BalanceType = "Balanced" | "Moderate" | "Indulgent";
 type CategoryType = "Main Course" | "Drinks" | "Dessert" | "Healthy Food" | "All";
 
@@ -108,25 +108,25 @@ function MenuContent() {
 
         const matchCategory = selectedCategory === "All" ||
             itemCategory === selectedCategory ||
-            (selectedCategory === "Main Course" && (itemCategory === "Food" || itemCategory === "main-course")) ||
-            (selectedCategory === "Drinks" && itemCategory === "drinks") ||
-            (selectedCategory === "Dessert" && itemCategory === "dessert") ||
+            (selectedCategory === "Main Course" && (itemCategory === "Food" || itemCategory === "main-course" || itemCategory === "Main Course" || itemCategory.toLowerCase().includes("main"))) ||
+            (selectedCategory === "Drinks" && (itemCategory === "drinks" || itemCategory === "Drinks")) ||
+            (selectedCategory === "Dessert" && (itemCategory === "dessert" || itemCategory === "Dessert")) ||
             (selectedCategory === "Healthy Food" && (itemCategory === "healthy-food" || itemCategory === "Healthy Food"));
         const matchBalance = selectedBalances.length === 0 || selectedBalances.includes(itemBalance);
 
         const matchDiets = selectedDiets.length === 0 || selectedDiets.some(d => item.diets?.includes(d));
-        // For allergies, typical logic is "Exclude if it contains selected allergy"
+
         const matchAllergies = selectedAllergies.length === 0 || !selectedAllergies.some(a => item.allergies?.includes(a));
         const matchFlavors = selectedFlavors.length === 0 || selectedFlavors.some(f => item.flavors?.includes(f));
 
-        // Mock personalized logic (e.g., must be Food and < 600 calories)
+
         let matchPersonalized = true;
         if (isPersonalized) {
             const cals = parseInt((item.calories || "0").replace(/\D/g, '')) || 0;
             matchPersonalized = itemCategory === "Food" && cals > 0 && cals < 600;
         }
 
-        // Filter out Unavailable dishes
+
         if (item.foodstatus === "Unavailable") return false;
 
         return matchCategory && matchBalance && matchDiets && matchAllergies && matchFlavors && matchPersonalized;
@@ -136,7 +136,7 @@ function MenuContent() {
         <div className="min-h-screen bg-[#FDFDFD] font-sans">
             <Navbar />
 
-            {/* Search Header */}
+
             <div className="bg-white border-b sticky top-16 z-30 shadow-sm hidden md:block">
                 <div className="container mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-gray-400 w-full max-w-md bg-gray-50 rounded-full px-4 py-2 border border-gray-100 focus-within:ring-2 focus-within:ring-orange-100 transition-all">
@@ -149,9 +149,9 @@ function MenuContent() {
 
             <div className="container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
 
-                {/* LEFT SIDEBAR */}
+
                 <div className="w-full lg:w-72 flex-shrink-0 space-y-8">
-                    {/* Nutrition Goals Widget */}
+
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center gap-2 mb-4 text-orange-600 font-bold tracking-wide text-[10px] uppercase">
                             <Dumbbell className="w-3 h-3" />
@@ -173,7 +173,7 @@ function MenuContent() {
                         </div>
                     </div>
 
-                    {/* Categories */}
+
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 mb-4">Categories</h3>
                         <div className="space-y-2">
@@ -234,7 +234,7 @@ function MenuContent() {
                         </div>
                     </div>
 
-                    {/* Expandable Filters */}
+
                     <Accordion type="multiple" defaultValue={["balance", "diet"]} className="space-y-4">
                         <AccordionItem value="balance" className="bg-white rounded-2xl border border-gray-100 px-4 overflow-hidden">
                             <AccordionTrigger className="hover:no-underline py-4">
@@ -327,22 +327,12 @@ function MenuContent() {
                     </Accordion>
                 </div>
 
-                {/* MAIN CONTENT */}
+
                 <div className="flex-1">
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                         <div>
-                            <div className="flex items-center gap-4">
-                                <h2 className="text-3xl font-bold text-gray-900">Recommended for You</h2>
-                                <button
-                                    onClick={() => setIsPersonalized(!isPersonalized)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${isPersonalized ? 'bg-orange-500' : 'bg-gray-200'}`}
-                                >
-                                    <span className="sr-only">Enable personalization</span>
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPersonalized ? 'translate-x-6' : 'translate-x-1'}`} />
-                                </button>
-                                <span className="text-sm font-bold text-orange-600 tracking-wide uppercase">Especially for you</span>
-                            </div>
-                            <p className="text-gray-500 mt-1">Please choose your food and place your order now!</p>
+                            <h2 className="text-3xl font-bold text-gray-900">Thực đơn của chúng tôi</h2>
+                            <p className="text-gray-500 mt-1">Vui lòng chọn món ăn và đặt hàng ngay!</p>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -353,7 +343,7 @@ function MenuContent() {
                         </div>
                     </div>
 
-                    {/* Loading State */}
+
                     {isLoading && (
                         <div className="text-center py-20">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
@@ -361,13 +351,13 @@ function MenuContent() {
                         </div>
                     )}
 
-                    {/* Grid */}
+
                     {!isLoading && (
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredItems.map((item) => (
                                 <Link href={`/dishes/${item.id}`} key={item.id} className="block group h-full">
                                     <Card className={`h-full overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-300 bg-white rounded-[2rem] flex flex-col ${item.foodstatus === "Out of Stock" ? "grayscale opacity-60 relative after:absolute after:inset-0 after:bg-white/20 after:z-10" : ""}`}>
-                                        {/* Image Area */}
+
                                         <div className="relative aspect-[5/4] bg-gray-100 overflow-hidden">
                                             {item.image ? (
                                                 <img
@@ -381,7 +371,7 @@ function MenuContent() {
                                                 </div>
                                             )}
 
-                                            {/* Top Tag - Using status or first AI tag */}
+
                                             {item.foodstatus === "Out of Stock" ? (
                                                 <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md z-10 uppercase tracking-wide">
                                                     <Clock className="w-3 h-3 fill-current" />
@@ -395,7 +385,7 @@ function MenuContent() {
                                             )}
                                         </div>
 
-                                        {/* Content Area */}
+
                                         <CardContent className="p-6 flex flex-col flex-1">
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="font-bold text-lg text-gray-900 group-hover:text-orange-500 transition-colors line-clamp-1 leading-tight">

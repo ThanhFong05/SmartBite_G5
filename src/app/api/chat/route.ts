@@ -8,7 +8,6 @@ export async function POST(req: NextRequest) {
         const { messages } = body;
         const apiKey = process.env.GEMINI_API_KEY;
 
-        // 1. Kiểm tra đầu vào
         if (!apiKey) {
             return NextResponse.json({ error: "API key is missing" }, { status: 500 });
         }
@@ -18,7 +17,7 @@ export async function POST(req: NextRequest) {
 
         const supabase = await createClient();
 
-        // 2. Lấy danh sách món ăn từ database để làm context (Kế thừa Đoạn 1)
+        // Lấy danh sách món ăn từ database để làm context
         const { data: dishes, error: dishesError } = await supabase
             .from('fooditems')
             .select('foodname, descriptions, price, calories, preptime, allergyinfo, ingredients')
@@ -51,56 +50,49 @@ export async function POST(req: NextRequest) {
 
         console.log(`Successfully built menu context with ${dishes?.length || 0} dishes.`);
 
-        // 3. Định nghĩa System Prompt (Kế thừa Đoạn 3)
-        const systemPrompt = `Bạn là SmartBite AI Advisor, một chuyên gia dinh dưỡng và trợ lý đặt món ăn thông minh. 
-Bạn đang hỗ trợ người dùng trên ứng dụng đặt đồ ăn SmartBite.
-Dưới đây là thực đơn hiện tại của nhà hàng:\n${menuContext}\n
-NHIỆM VỤ CỦA BẠN:
-1. Trả lời các câu hỏi về dinh dưỡng, sức khỏe và thực đơn một cách chuyên nghiệp, thân thiện.
-2. Gợi ý các món ăn CÓ TRONG THỰC ĐƠN trên dựa trên yêu cầu của người dùng.
-3. Luôn trả lời bằng TIẾNG VIỆT, lịch sự và ngắn gọn.`;
-
-        // 4. Khởi tạo Gemini SDK (Kế thừa Đoạn 2 + Tối ưu hóa System Instruction)
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            systemInstruction: systemPrompt // Nhồi toàn bộ bối cảnh và vai trò vào đây
+        // Gọi Supabase Edge Function bằng fetch trực tiếp để dễ debug
+        const functionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/smartbite-ai`;
+        const edgeResponse = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({
+                messages,
+                menuContext
+            })
         });
 
-        // 5. Chuẩn bị lịch sử trò chuyện (Chuyển đổi role sang format của Gemini)
-        const formattedHistory = messages.slice(0, -1).map((msg: any) => ({
-            role: msg.role === "assistant" ? "model" : "user",
-            parts: [{ text: msg.content }],
-        }));
+        const responseText = await edgeResponse.text();
+        let edgeData: any = null;
+        try {
+            edgeData = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Non-JSON response from Edge Function:", responseText);
+        }
 
-        const latestMessage = messages[messages.length - 1].content;
-
-        // 6. Gửi tin nhắn và nhận kết quả
-        const chat = model.startChat({ history: formattedHistory });
-        const result = await chat.sendMessage(latestMessage);
-        
-        const content = result.response.text();
-
-        if (!content) {
+        if (!edgeResponse.ok) {
+            console.error("Edge Function Error Status:", edgeResponse.status, responseText);
             return NextResponse.json(
                 { error: "No content returned from AI" },
                 { status: 500 }
             );
         }
 
-        // 7. Trả về cho Frontend
-        return NextResponse.json({ 
-            role: "assistant", 
-            content: content 
+        return NextResponse.json({
+            role: "assistant",
+            content: edgeData?.content || "Không có phản hồi từ AI."
         });
 
     } catch (error: any) {
         console.error("Error in chat API:", error);
         return NextResponse.json(
-            { 
+            {
                 error: error.message || "Lỗi không xác định",
                 details: error.stack,
-                status: "failed" 
+                status: "failed"
             },
             { status: 500 }
         );

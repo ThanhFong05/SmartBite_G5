@@ -54,7 +54,7 @@ export default function Reports() {
                 </div>
             </div>
 
-            {/* Metric Cards */}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4">
@@ -105,7 +105,7 @@ export default function Reports() {
                 </div>
             </div>
 
-            {/* Chart Area */}
+            
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-6">
                     <BarChart3 className="w-5 h-5 text-gray-500" />
@@ -138,7 +138,7 @@ export default function Reports() {
                                     width={80}
                                 />
                                 <Tooltip
-                                    formatter={(value: number) => [formatPrice(value), 'Revenue']}
+                                    formatter={(value: any) => [formatPrice(Number(value) || 0), 'Revenue']}
                                     labelFormatter={(label) => new Date(label).toLocaleDateString('vi-VN')}
                                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 />

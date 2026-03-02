@@ -25,7 +25,7 @@ const salesData = [
     { name: 'Sun', value: 3490 },
 ]
 
-// Mock data for the wave charts in metrics
+
 const simpleWaveData = [
     { value: 10 }, { value: 20 }, { value: 15 }, { value: 30 }, { value: 25 }, { value: 40 }, { value: 35 }, { value: 50 }
 ]
@@ -48,9 +48,9 @@ export default function AdminDashboard() {
     return (
         <div className="space-y-6">
 
-            {/* Metrics Row */}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Total Sales */}
+                
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-4">
                         <div>
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
                     <SimpleAreaChart color="#F97316" data={simpleWaveData} />
                 </div>
 
-                {/* Total Orders */}
+                
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-4">
                         <div>
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
                     <SimpleAreaChart color="#F97316" data={simpleWaveData.map(i => ({ value: i.value * 0.8 }))} />
                 </div>
 
-                {/* Active Users */}
+                
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-4">
                         <div>
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
                     <SimpleAreaChart color="#F97316" data={simpleWaveData.slice().reverse()} />
                 </div>
 
-                {/* Growth Rate */}
+                
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-4">
                         <div>
@@ -111,9 +111,9 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Main Charts & Popular Items Row */}
+            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Sales Analytics */}
+                
                 <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                     <div className="flex items-center justify-between mb-8">
                         <div>
@@ -149,7 +149,7 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* Popular Dishes */}
+                
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                     <div className="mb-6">
                         <h3 className="text-lg font-bold text-gray-900">Popular Dishes</h3>
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Recent Performance Summary */}
+            
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-50">
                     <h3 className="text-lg font-bold text-gray-900">Recent Performance Summary</h3>

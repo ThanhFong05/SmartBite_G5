@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
         if (error) throw error;
 
-        // Không tự động cập nhật orderstatus sang 3 nữa, để Admin tự bấm Confirm
+        
 
         return NextResponse.json({ success: true });
 

@@ -43,7 +43,7 @@ export function ReviewDialog({ orderId, orderItems = [], triggerElement, onRevie
         setIsMounted(true)
     }, [])
 
-    // Set initial food ratings based on orderItems
+    
     useEffect(() => {
         if (orderItems.length > 0) {
             const initial: Record<string, { rating: number, hover: number, comment: string }> = {}
@@ -54,7 +54,7 @@ export function ReviewDialog({ orderId, orderItems = [], triggerElement, onRevie
         }
     }, [orderItems])
 
-    // Check if reviewed when open
+    
     useEffect(() => {
         if (open && isMounted) {
             const checkReview = async () => {
@@ -98,7 +98,7 @@ export function ReviewDialog({ orderId, orderItems = [], triggerElement, onRevie
     }, [open, orderId, isMounted])
 
     const handleSubmit = async () => {
-        // Only consider new ratings (not already in initial state) and if the type matches
+        
         const hasNewOrderRating = (type === 'all' || type === 'order') && !initialOrderReviewed && orderRating > 0
         const hasNewFoodRating = (type === 'all' || type === 'dish') && Object.entries(foodRatings).some(([foodId, data]) =>
             !initialReviewedFoodIds.has(foodId) && data.rating > 0
@@ -169,8 +169,8 @@ export function ReviewDialog({ orderId, orderItems = [], triggerElement, onRevie
     }
 
     if (!isMounted) {
-        // Return a placeholder that matches the SSR structure if possible, 
-        // but since this is usually called after parent mount, null is safe.
+        
+        
         return null;
     }
 
@@ -213,7 +213,7 @@ export function ReviewDialog({ orderId, orderItems = [], triggerElement, onRevie
                             </div>
                         ) : (
                             <div className="space-y-10">
-                                {/* Overall Order Rating */}
+                                
                                 {(type === 'all' || type === 'order') && (
                                     <section className="space-y-4">
                                         <div className="flex items-center gap-2 mb-2">
@@ -256,7 +256,7 @@ export function ReviewDialog({ orderId, orderItems = [], triggerElement, onRevie
                                     </section>
                                 )}
 
-                                {/* Food Items Rating */}
+                                
                                 {(type === 'all' || type === 'dish') && orderItems.length > 0 && (
                                     <section className="space-y-6">
                                         <div className="flex items-center gap-2 mb-2">

@@ -35,7 +35,7 @@ import {
 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 
-// Define icons map
+
 const INGREDIENT_ICONS = [
     { label: "General", value: "box", icon: Utensils },
     { label: "Meat", value: "meat", icon: Beef },
@@ -147,7 +147,7 @@ export default function MenuManagement() {
             if (res.ok) {
                 const data: Category[] = await res.json()
                 setCategories(data)
-                // Set default category if not set
+                
                 if (data.length > 0 && !newDish.category) {
                     setNewDish(prev => ({ ...prev, category: data[0].categoryid }))
                 }
@@ -197,7 +197,7 @@ export default function MenuManagement() {
         handleAiReviewChange('tags', newTags)
     }
 
-    // Ingredients Handlers
+    
     const addIngredient = () => {
         setNewDish(prev => ({
             ...prev,
@@ -217,7 +217,7 @@ export default function MenuManagement() {
         setNewDish(prev => ({ ...prev, ingredients: updatedIngredients }))
     }
 
-    // Extras Handlers
+    
     const addExtra = () => {
         setNewDish(prev => ({
             ...prev,
@@ -251,7 +251,7 @@ export default function MenuManagement() {
         try {
             let imageUrl = newDish.image
 
-            // Nếu người dùng chọn file mới, upload lên Supabase Storage
+            
             if (selectedFile) {
                 const fileExt = selectedFile.name.split('.').pop()
                 const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
@@ -268,7 +268,7 @@ export default function MenuManagement() {
                     return
                 }
 
-                // Lấy URL Public của ảnh vừa up
+                
                 const { data: publicUrlData } = supabase.storage
                     .from('food-images')
                     .getPublicUrl(filePath)
@@ -276,7 +276,7 @@ export default function MenuManagement() {
                 imageUrl = publicUrlData.publicUrl
             }
 
-            // Gắn URL ảnh vào thông tin món trước khi lưu
+            
             const finalDish = { ...newDish, image: imageUrl }
 
             const url = editingDishId ? `/api/dishes/${editingDishId}` : "/api/dishes"
@@ -329,7 +329,7 @@ export default function MenuManagement() {
     }
 
     const handleDelete = async (id: string) => {
-        // Hàm này giữ lại để tương thích nếu cần, nhưng logic chính đã chuyển sang handleUpdateStatus
+        
         await handleUpdateStatus(id, 'Unavailable');
     }
 
@@ -360,7 +360,7 @@ export default function MenuManagement() {
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="grid gap-6 py-4">
-                            {/* Basic Info */}
+                            
                             <div className="grid gap-4">
                                 <h3 className="font-semibold text-gray-900 border-b pb-2">Basic Information</h3>
                                 <div className="grid gap-2">
@@ -383,32 +383,7 @@ export default function MenuManagement() {
                                                 <Input
                                                     id="image"
                                                     type="file"
-                                                    accept="image/*"
-                                                    onChange={handleFileChange}
-                                                    className="cursor-pointer file:cursor-pointer file:bg-orange-50 file:text-orange-700 file:border-0 file:rounded-md file:px-2 file:py-1 file:mr-2 hover:file:bg-orange-100"
-                                                />
-                                                {selectedFile && <span className="text-xs text-green-600 block shrink-0 flex items-center gap-1"><Upload className="w-3 h-3" /> Selected</span>}
-                                            </div>
-                                            {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
-                                            {!selectedFile && newDish.image && (
-                                                <p className="text-xs text-gray-400 mt-1 truncate">Current: {newDish.image}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="time">Time</Label>
-                                        <Input id="time" name="time" value={newDish.time} onChange={handleInputChange} placeholder="20m" />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="calories">Calories</Label>
-                                        <Input id="calories" name="calories" value={newDish.calories} onChange={handleInputChange} placeholder="500 kcal" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Categories & Dietary Balance */}
+                                                    accept="image}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <Label className="text-base font-semibold">Categories</Label>
@@ -488,7 +463,7 @@ export default function MenuManagement() {
                             </div>
 
 
-                            {/* Diets */}
+                            
                             <div className="grid grid-cols-1 gap-6">
                                 <div className="space-y-3">
                                     <Label className="text-base font-semibold">Diet</Label>
@@ -516,7 +491,7 @@ export default function MenuManagement() {
                                 </div>
                             </div>
 
-                            {/* Allergies and Flavors */}
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <Label className="text-base font-semibold">Food Allergies</Label>
@@ -568,7 +543,7 @@ export default function MenuManagement() {
                                 </div>
                             </div>
 
-                            {/* SmartBite AI Review */}
+                            
                             <div className="grid gap-4">
                                 <h3 className="font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
                                     SmartBite AI Review
@@ -604,7 +579,7 @@ export default function MenuManagement() {
                                 </div>
                             </div>
 
-                            {/* Main Ingredients */}
+                            
                             <div className="grid gap-4">
                                 <div className="flex items-center justify-between border-b pb-2">
                                     <h3 className="font-semibold text-gray-900">Main Ingredients</h3>
@@ -644,7 +619,7 @@ export default function MenuManagement() {
                                 )}
                             </div>
 
-                            {/* Extras */}
+                            
                             <div className="grid gap-4">
                                 <div className="flex items-center justify-between border-b pb-2">
                                     <h3 className="font-semibold text-gray-900">Add Extras</h3>

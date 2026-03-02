@@ -34,7 +34,7 @@ export default function ProfilePage() {
             <Navbar />
 
             <main className="container mx-auto px-4 py-8 md:py-12">
-                {/* Header */}
+                
                 <div className="mb-8">
                     <div className="flex items-center gap-2 mb-2">
                         <span className="bg-orange-100 text-orange-600 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
@@ -49,10 +49,10 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-8">
-                    {/* Left Column - Main Form */}
+                    
                     <div className="lg:col-span-2 space-y-6">
 
-                        {/* 1. Basic Info */}
+                        
                         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
@@ -62,7 +62,7 @@ export default function ProfilePage() {
                             </div>
 
                             <div className="space-y-6">
-                                {/* Gender */}
+                                
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-gray-600 block">Gender</label>
                                     <div className="grid grid-cols-2 gap-4">
@@ -88,7 +88,7 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                {/* Height & Weight */}
+                                
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-gray-600 block">Height (cm)</label>
@@ -100,7 +100,7 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                {/* Year & Activity */}
+                                
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-gray-600 block">Year of Birth</label>
@@ -126,7 +126,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* 2. Goals */}
+                        
                         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
@@ -164,7 +164,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* 3. Diet & Allergies */}
+                        
                         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
@@ -215,7 +215,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* Footer Actions */}
+                        
                         <div className="flex justify-end items-center gap-4 pt-4">
                             <Button variant="ghost" className="text-gray-500 hover:text-gray-900 font-medium px-6">
                                 Skip
@@ -227,9 +227,9 @@ export default function ProfilePage() {
 
                     </div>
 
-                    {/* Right Column - Sidebar */}
+                    
                     <div className="lg:col-span-1 space-y-6">
-                        {/* AI Stats Card */}
+                        
                         <div className="bg-[#FFF8F3] rounded-2xl p-6 border border-orange-100">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/30">
@@ -242,20 +242,20 @@ export default function ProfilePage() {
                             </div>
 
                             <div className="space-y-6">
-                                {/* BMI */}
+                                
                                 <div className="bg-white rounded-xl p-4 shadow-sm border border-orange-50/50">
                                     <div className="text-sm text-gray-500 mb-1">Estimated BMI</div>
                                     <div className="flex items-end gap-2 mb-2">
                                         <span className="text-3xl font-extrabold text-gray-900">22.5</span>
                                         <span className="text-sm font-semibold text-green-500 mb-1.5">Normal</span>
                                     </div>
-                                    {/* Fake Progress Bar */}
+                                    
                                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
                                         <div className="w-[60%] h-full bg-green-500 rounded-full" />
                                     </div>
                                 </div>
 
-                                {/* Kal */}
+                                
                                 <div className="bg-white rounded-xl p-4 shadow-sm border border-orange-50/50">
                                     <div className="text-sm text-gray-500 mb-1">Recommended Calories / day</div>
                                     <div className="flex items-end gap-2">
@@ -264,7 +264,7 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                {/* Nutrition Dist */}
+                                
                                 <div className="bg-white rounded-xl p-4 shadow-sm border border-orange-50/50">
                                     <div className="text-sm text-gray-500 mb-3">Nutrition Distribution</div>
                                     <div className="grid grid-cols-3 gap-2 h-16 items-end">
@@ -277,7 +277,7 @@ export default function ProfilePage() {
                                         <div className="space-y-1 text-center">
                                             <div className="w-full bg-yellow-100 rounded-t-sm h-14 relative group">
                                                 <div className="absolute inset-0 bg-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-sm" />
-                                                {/* Active state simulation */}
+                                                
                                                 <div className="absolute inset-x-0 bottom-0 top-6 bg-yellow-400 rounded-t-sm" />
                                             </div>
                                             <div className="text-[10px] font-medium text-gray-900 font-bold">Carbs</div>
@@ -294,7 +294,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* Support Card */}
+                        
                         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                             <div className="flex items-start gap-3">
                                 <div className="p-2 bg-orange-50 rounded-lg text-orange-500">

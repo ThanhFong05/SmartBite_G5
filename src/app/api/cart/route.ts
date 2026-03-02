@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
-// POST /api/cart: Thêm món ăn vào giỏ hàng
+
 export async function POST(request: Request) {
     try {
         const supabase = await createClient();
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing userId or foodId' }, { status: 400 });
         }
 
-        // 0. Đảm bảo User tồn tại trong bảng 'users' (Self-healing)
+        
         const { data: userProfile } = await supabase
             .from('users')
             .select('userid')
@@ -20,12 +20,12 @@ export async function POST(request: Request) {
             .single();
 
         if (!userProfile) {
-            // Lấy email từ Auth một cách an toàn
+            
             const { data: { user: authUser } } = await supabase.auth.getUser();
             const email = authUser?.email || "user@example.com";
             const name = authUser?.user_metadata?.full_name || authUser?.user_metadata?.name || email.split('@')[0] || "User";
 
-            // Generate a random 10-digit phone number starting with '0' to avoid UNIQUE constraint errors
+            
             const randomPhone = '0' + Math.floor(100000000 + Math.random() * 900000000).toString();
 
             const { error: upsertError } = await supabase.from('users').upsert({
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
             }
         }
 
-        // 1. Kiểm tra hoặc tạo Giỏ hàng (Carts) cho User
+        
         let { data: cart, error: cartError } = await supabase
             .from('carts')
             .select('*')
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
             cart = newCart;
         }
 
-        // 2. Kiểm tra trạng thái món ăn (foodstatus)
+        
         const { data: foodItem, error: foodError } = await supabase
             .from('fooditems')
             .select('foodstatus')
@@ -80,10 +80,10 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // 3. Tạo CartItemId mới
+        
         const cartItemId = `ci-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-        // 3. Thêm món vào CartItems
+        
         const { error: itemError } = await supabase
             .from('cartitems')
             .insert([{
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 
         if (itemError) throw itemError;
 
-        // 4. Thêm Toppings vào CartItemToppings (nếu có)
+        
         if (selectedExtras && Array.isArray(selectedExtras) && selectedExtras.length > 0) {
             const toppingInserts = selectedExtras.map((toppingId: string) => ({
                 carttoppingid: `ct-${Math.random().toString(36).substring(2, 9)}`,
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     }
 }
 
-// GET /api/cart: Lấy danh sách giỏ hàng
+
 export async function GET(request: Request) {
     try {
         const supabase = await createClient();
@@ -130,7 +130,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
         }
 
-        // Lấy Cart theo UserId
+        
         const { data: cart } = await supabase
             .from('carts')
             .select('*')
@@ -139,7 +139,7 @@ export async function GET(request: Request) {
 
         if (!cart) return NextResponse.json({ items: [] });
 
-        // Lấy CartItems kèm thông tin món ăn và toppings
+        
         const { data: items, error: itemsError } = await supabase
             .from('cartitems')
             .select(`
@@ -160,7 +160,7 @@ export async function GET(request: Request) {
     }
 }
 
-// DELETE /api/cart: Xóa toàn bộ giỏ hàng của User
+
 export async function DELETE(request: Request) {
     try {
         const supabase = await createClient();
@@ -171,7 +171,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
         }
 
-        // Lấy CartId của User
+        
         const { data: cart } = await supabase
             .from('carts')
             .select('cartid')
@@ -179,7 +179,7 @@ export async function DELETE(request: Request) {
             .single();
 
         if (cart) {
-            // 1. Lấy danh sách CartItemIds thuộc Cart này
+            
             const { data: items } = await supabase
                 .from('cartitems')
                 .select('cartitemid')
@@ -188,13 +188,13 @@ export async function DELETE(request: Request) {
             if (items && items.length > 0) {
                 const itemIds = items.map(i => i.cartitemid);
 
-                // 2. Xóa tất cả Toppings liên quan đến các món này
+                
                 await supabase
                     .from('cartitemtoppings')
                     .delete()
                     .in('cartitemid', itemIds);
 
-                // 3. Bây giờ mới xóa các món trong CartItems
+                
                 const { error: deleteError } = await supabase
                     .from('cartitems')
                     .delete()

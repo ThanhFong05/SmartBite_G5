@@ -11,11 +11,11 @@ export async function GET(request: Request) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error && data?.user) {
-            // Tự động đồng bộ vào bảng 'users' (Lowercase)
+            
             const user = data.user;
             const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "User";
 
-            // Generate a random 10-digit phone number starting with '0' to avoid UNIQUE constraint errors
+            
             const randomPhone = '0' + Math.floor(100000000 + Math.random() * 900000000).toString();
 
             const { error: upsertError } = await supabase.from('users').upsert({
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
                 console.error('OAuth sync user upsert error:', upsertError);
             }
 
-            // Xác định xem redirect về đâu. Mặc định là trang chủ '/'
+            
             return NextResponse.redirect(`${origin}${next}`)
         } else {
             console.error('OAuth exchange error:', error)
@@ -40,6 +40,6 @@ export async function GET(request: Request) {
         console.error('OAuth callback missing code')
     }
 
-    // Nếu có lỗi thì về trang bị lỗi đăng nhập
+    
     return NextResponse.redirect(`${origin}/auth/login?error=oauth-failed`)
 }

@@ -8,7 +8,7 @@ export async function GET(
     try {
         const supabase = await createClient();
         const { orderId: rawOrderId } = await params;
-        // Chuẩn hóa orderId (loại bỏ dấu # nếu có từ client truyền vào)
+        
         const orderId = rawOrderId.replace(/^#/, '');
 
         const { data: order, error } = await supabase
@@ -42,7 +42,7 @@ export async function PUT(
     try {
         const supabase = await createClient();
         const { orderId: rawOrderId } = await params;
-        // Chuẩn hóa orderId (loại bỏ dấu # nếu có từ client truyền vào)
+        
         const orderId = rawOrderId.replace(/^#/, '');
         const body = await request.json();
         const { status } = body;

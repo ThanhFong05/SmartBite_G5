@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
-// PUT /api/cart/[itemId]: Cập nhật số lượng món ăn trong giỏ
+
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ itemId: string }> }
@@ -13,13 +13,13 @@ export async function PUT(
         const { quantity } = body;
 
         if (quantity <= 0) {
-            // 1. Xóa các Toppings liên quan trước
+            
             await supabase
                 .from('cartitemtoppings')
                 .delete()
                 .eq('cartitemid', itemId);
 
-            // 2. Xóa món chính
+            
             const { error: deleteError } = await supabase
                 .from('cartitems')
                 .delete()
@@ -42,7 +42,7 @@ export async function PUT(
     }
 }
 
-// DELETE /api/cart/[itemId]: Xóa một món cụ thể
+
 export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ itemId: string }> }
@@ -51,13 +51,13 @@ export async function DELETE(
         const supabase = await createClient();
         const { itemId } = await params;
 
-        // 1. Xóa các Toppings liên quan trước
+        
         await supabase
             .from('cartitemtoppings')
             .delete()
             .eq('cartitemid', itemId);
 
-        // 2. Xóa món chính
+        
         const { error: deleteError } = await supabase
             .from('cartitems')
             .delete()

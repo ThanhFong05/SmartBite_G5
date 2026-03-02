@@ -44,12 +44,12 @@ export function AddToCart({ price, dish, selectedExtras }: AddToCartProps) {
             return;
         }
 
-        // Determine which extras were selected
+        
         const selectedExtrasArray = dish.extras
             ? dish.extras.filter((_: any, idx: number) => selectedExtras?.[idx])
             : [];
 
-        // Map to topping IDs from DB
+        
         const toppingIds = selectedExtrasArray.map((e: any) => e.id);
 
         try {
@@ -57,7 +57,7 @@ export function AddToCart({ price, dish, selectedExtras }: AddToCartProps) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: userId, // lowercase key value
+                    userId: userId, 
                     foodId: dish.id,
                     quantity,
                     selectedExtras: toppingIds,
@@ -70,7 +70,7 @@ export function AddToCart({ price, dish, selectedExtras }: AddToCartProps) {
                 alert(`Đã thêm ${quantity} phần ${dish.title} vào giỏ hàng`);
             } else {
                 const errorData = await res.json();
-                // Nếu lỗi liên quan đến foreign key, nhắc nhở đăng nhập lại
+                
                 if (errorData.error?.includes("foreign key constraint")) {
                     alert("Lỗi: Phiên đăng nhập chưa đồng bộ. Hệ thống đang tự động sửa lỗi, bạn vui lòng THỬ LẠI hoặc F5 trang.");
                 } else {

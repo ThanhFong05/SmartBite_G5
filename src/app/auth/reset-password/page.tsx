@@ -50,7 +50,7 @@ function ResetPasswordForm() {
         setIsLoading(true);
 
         try {
-            // Verify OTP and Update Password via API
+            
             const res = await fetch("/api/auth/reset-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -60,8 +60,8 @@ function ResetPasswordForm() {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                // Logic cập nhật password giờ đã được thực hiện ở Server (API) 
-                // thông qua Supabase Admin API thay vì localStorage.
+                
+                
 
                 setSuccess("Password changed successfully! Redirecting to login page...");
                 setTimeout(() => {

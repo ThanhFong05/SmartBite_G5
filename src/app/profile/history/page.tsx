@@ -35,7 +35,7 @@ export default function OrderHistoryPage() {
                             const allOrders = data.orders || [];
 
                             const statusMap: Record<number, string> = {
-                                1: 'Confirmed', // Pending in DB is confirmed for user
+                                1: 'Confirmed',
                                 2: 'Confirmed',
                                 3: 'Preparing',
                                 4: 'Delivering',
@@ -81,7 +81,7 @@ export default function OrderHistoryPage() {
             <Navbar />
 
             <main className="flex-grow container mx-auto px-4 py-8 max-w-7xl">
-                {/* Header Section */}
+
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                     <div className="max-w-2xl">
                         <span className="inline-block bg-orange-100 text-orange-600 font-bold text-xs px-3 py-1 rounded-full uppercase tracking-widest mb-3">
@@ -116,9 +116,9 @@ export default function OrderHistoryPage() {
                 </div>
 
                 <div className="grid lg:grid-cols-12 gap-8">
-                    {/* Left Column - Order List */}
+
                     <div className="lg:col-span-8 space-y-6">
-                        {/* Tabs */}
+
                         <div className="flex flex-wrap gap-3 mb-6">
                             {['All', 'Delivering', 'Completed', 'Cancelled'].map((tab) => (
                                 <button
@@ -134,7 +134,7 @@ export default function OrderHistoryPage() {
                             ))}
                         </div>
 
-                        {/* Order List */}
+
                         <div className="space-y-4">
                             {filteredOrders.map((order) => (
                                 <div key={order.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
@@ -181,14 +181,6 @@ export default function OrderHistoryPage() {
                                                     />
                                                 </div>
                                             )}
-                                            <Link href={`/order/${order.id}`} className="flex-1 sm:flex-none">
-                                                <Button variant="outline" className="w-full rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50">
-                                                    Details
-                                                </Button>
-                                            </Link>
-                                            <Button className="flex-1 sm:flex-none rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold">
-                                                Reorder
-                                            </Button>
                                         </div>
                                     </div>
                                 </div>
@@ -196,10 +188,10 @@ export default function OrderHistoryPage() {
                         </div>
                     </div>
 
-                    {/* Right Column - Dashboards */}
+
                     <div className="lg:col-span-4 space-y-6">
 
-                        {/* Calorie Chart Mock */}
+
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
@@ -210,19 +202,19 @@ export default function OrderHistoryPage() {
                             </div>
 
                             <div className="relative h-48 w-full">
-                                {/* Simple SVG representation of a line chart */}
+
                                 <svg viewBox="0 0 100 50" className="w-full h-full overflow-visible" preserveAspectRatio="none">
-                                    {/* Grid Lines */}
+
                                     {[10, 20, 30, 40].map(y => (
                                         <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#f3f4f6" strokeWidth="0.5" />
                                     ))}
-                                    {/* Area Fill */}
+
                                     <path
                                         d="M0,40 L15,20 L30,30 L50,15 L65,40 L85,5 L100,35 L100,50 L0,50 Z"
                                         fill="url(#orange-gradient)"
                                         opacity="0.2"
                                     />
-                                    {/* Line */}
+
                                     <path
                                         d="M0,40 L15,20 L30,30 L50,15 L65,40 L85,5 L100,35"
                                         fill="none"
@@ -231,7 +223,7 @@ export default function OrderHistoryPage() {
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                     />
-                                    {/* Points */}
+
                                     <circle cx="0" cy="40" r="2" fill="white" stroke="#f97316" strokeWidth="1" />
                                     <circle cx="15" cy="20" r="2" fill="white" stroke="#f97316" strokeWidth="1" />
                                     <circle cx="30" cy="30" r="2" fill="white" stroke="#f97316" strokeWidth="1" />
@@ -248,7 +240,7 @@ export default function OrderHistoryPage() {
                                     </defs>
                                 </svg>
 
-                                {/* Labels */}
+
                                 <div className="absolute inset-0 flex justify-between items-end pb-[-20px] pt-48 px-1 text-[10px] text-gray-400">
                                     <span>Mon</span>
                                     <span>Tue</span>
@@ -266,9 +258,9 @@ export default function OrderHistoryPage() {
                             </div>
                         </div>
 
-                        {/* AI Advice Box */}
+
                         <div className="bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl p-6 shadow-lg shadow-orange-200 text-white border border-orange-400 relative overflow-hidden">
-                            {/* Decorative element */}
+
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-bl-full translate-x-8 -translate-y-8"></div>
 
                             <div className="flex items-center gap-2 mb-4 relative z-10">
@@ -287,12 +279,12 @@ export default function OrderHistoryPage() {
                             </Button>
                         </div>
 
-                        {/* Nutrition Bars */}
+
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                             <h3 className="font-bold text-gray-900 mb-6">Nutrition Intake</h3>
 
                             <div className="space-y-6">
-                                {/* Protein */}
+
                                 <div>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="text-gray-500 font-medium">Protein</span>
@@ -303,7 +295,7 @@ export default function OrderHistoryPage() {
                                     </div>
                                 </div>
 
-                                {/* Carbs */}
+
                                 <div>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="text-gray-500 font-medium">Carbs</span>
@@ -314,7 +306,7 @@ export default function OrderHistoryPage() {
                                     </div>
                                 </div>
 
-                                {/* Fat */}
+
                                 <div>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="text-gray-500 font-medium">Fat</span>

@@ -12,7 +12,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
         }
 
-        // Kiểm tra cấu hình Email
+        
         if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
             console.error('Missing EMAIL_USER or EMAIL_PASS environment variables');
             return NextResponse.json({
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-        // 1. Kiểm tra xem email có tồn tại trong hệ thống không
+        
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('userid')
@@ -35,22 +35,22 @@ export async function POST(req: Request) {
             }, { status: 404 });
         }
 
-        // Generate a 6-digit OTP
+        
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Store OTP with an expiration of 10 minutes
+        
         otpStorage[email] = {
             otp,
             expires: Date.now() + 10 * 60 * 1000,
-            userid: user.userid // Lưu ID để reset mật khẩu chính xác
+            userid: user.userid 
         };
 
-        // Configure nodemailer transporter using environment variables
+        
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS?.replace(/\s/g, ''), // remove spaces if provided
+                pass: process.env.EMAIL_PASS?.replace(/\s/g, ''), 
             },
         });
 
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
             `
         };
 
-        // Send the email
+        
         await transporter.sendMail(mailOptions);
 
         return NextResponse.json({ success: true, message: 'OTP sent successfully' });
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         return NextResponse.json({
             success: false,
             error: 'Failed to send OTP email: ' + (error.message || 'Unknown error'),
-            details: error.code // Trả về mã lỗi SMTP nếu có
+            details: error.code 
         }, { status: 500 });
     }
 }

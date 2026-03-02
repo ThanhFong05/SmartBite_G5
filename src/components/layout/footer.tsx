@@ -7,7 +7,7 @@ export function Footer() {
         <footer className="bg-[#2D2424] text-gray-400 py-12 border-t border-gray-800">
             <div className="container mx-auto px-4">
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-                    {/* Brand */}
+                    
                     <div>
                         <div className="flex items-center gap-3 mb-4 text-white">
                             <Image
@@ -35,7 +35,7 @@ export function Footer() {
                         </div>
                     </div>
 
-                    {/* Quick Links */}
+                    
                     <div>
                         <h3 className="text-white font-bold mb-4">Quick Links</h3>
                         <ul className="space-y-2 text-sm">
@@ -46,7 +46,7 @@ export function Footer() {
                         </ul>
                     </div>
 
-                    {/* Support */}
+                    
                     <div>
                         <h3 className="text-white font-bold mb-4">Support</h3>
                         <ul className="space-y-2 text-sm">
@@ -57,7 +57,7 @@ export function Footer() {
                         </ul>
                     </div>
 
-                    {/* Contact */}
+                    
                     <div>
                         <h3 className="text-white font-bold mb-4">Contact</h3>
                         <ul className="space-y-4 text-sm">

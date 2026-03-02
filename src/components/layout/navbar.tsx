@@ -23,7 +23,7 @@ export function Navbar() {
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("User");
 
-  // Helper to get initials (e.g., "Thanh Phong" -> "TP")
+  
   const getInitials = (name: string) => {
     if (!name) return "U";
     const parts = name.trim().split(" ");
@@ -34,17 +34,17 @@ export function Navbar() {
   };
 
   useEffect(() => {
-    // Check initial state
+    
     const checkAuth = async () => {
       let userStr = localStorage.getItem("user");
 
       if (!userStr) {
-        // Nếu không có trong local storage, thử kiểm tra session của Supabase (dành cho OAuth Google/Facebook)
+        
         try {
           const supabase = createClient();
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            // Lấy metadata từ OAuth
+            
             const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "User";
             const newUserObj = {
               userid: user.id,
@@ -67,7 +67,7 @@ export function Navbar() {
           const name = user.fullname || user.FullName || user.name || "User";
           setUserName(name);
         } catch (e) {
-          // fallback
+          
         }
       } else {
         setIsLoggedIn(false);
@@ -85,7 +85,7 @@ export function Navbar() {
             if (res.ok) {
               const data = await res.json();
               const items = data.items || [];
-              // Ép kiểu quantity về số để tránh nối chuỗi
+              
               const count = items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
 
               setCartCount(count);
@@ -110,7 +110,7 @@ export function Navbar() {
             if (res.ok) {
               const data = await res.json();
               const orders = data.orders || [];
-              // Tìm đơn hàng mới nhất chưa hoàn thành (status < 5)
+              
               const activeOrder = orders.find((o: any) => Number(o.orderstatus) < 5);
               if (activeOrder) {
                 setActiveOrderId(activeOrder.orderid);
@@ -129,11 +129,11 @@ export function Navbar() {
     checkCart();
     checkActiveOrder();
 
-    // Listen for custom auth events
+    
     window.addEventListener("authChange", checkAuth);
     window.addEventListener("cartUpdate", checkCart);
     window.addEventListener("orderUpdate", checkActiveOrder);
-    // Also listen for storage events in case of cross-tab changes
+    
     window.addEventListener("storage", () => {
       checkAuth();
       checkCart();
@@ -155,15 +155,15 @@ export function Navbar() {
     }
     localStorage.removeItem("user");
     setIsLoggedIn(false);
-    // Dispatch event to notify other components if needed
+    
     window.dispatchEvent(new Event("authChange"));
-    router.push('/'); // hoặc router.push('/auth/login')
+    router.push('/'); 
   };
 
   return (
     <nav className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo */}
+        
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/images/logo.png"
@@ -175,7 +175,7 @@ export function Navbar() {
           <span className="text-2xl font-bold text-primary">SmartBite</span>
         </Link>
 
-        {/* Navigation Links */}
+        
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
           <Link href="/" className="hover:text-primary transition-colors  ">
             Home
@@ -188,7 +188,7 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Right Section */}
+        
         <div className="flex items-center gap-4">
           {isLoggedIn && (
             <>

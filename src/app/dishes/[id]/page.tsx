@@ -130,18 +130,18 @@ export default function DishPage() {
         )
     }
 
-    // Map new data model to components
-    // Create an AI Analysis object from the review data
+
+
     const aiAnalysis = dish.aiReview ? {
         text: dish.aiReview.summary,
         tags: dish.aiReview.tags?.map((tag: string) => ({
             text: tag,
-            color: "green", // Default color, logic could be added
+            color: "green",
             check: true
         })) || []
     } : undefined;
 
-    // Use specific images or fallback
+
     const images = dish.images && dish.images.length > 0 ? dish.images : [dish.image];
 
     return (
@@ -154,7 +154,7 @@ export default function DishPage() {
                         Thông báo: Món ăn này hiện đang tạm hết hàng. Quý khách vui lòng chọn món khác.
                     </div>
                 )}
-                {/* Breadcrumb / Back button */}
+
                 <div className="mb-6">
                     <Link href="/menu" className="inline-flex items-center text-sm text-gray-500 hover:text-primary transition-colors">
                         <ArrowLeft className="w-4 h-4 mr-1" />
@@ -163,22 +163,22 @@ export default function DishPage() {
                 </div>
 
                 <div className="grid lg:grid-cols-12 gap-8 mb-12">
-                    {/* Left Column - Gallery */}
+
                     <div className="lg:col-span-7">
                         <ProductGallery images={images} />
                     </div>
 
-                    {/* Right Column - Info & Options */}
+
                     <div className="lg:col-span-5 space-y-8">
                         <ProductInfo
                             title={dish.title}
                             price={dish.price}
-                            originalPrice={null} // Not in new model currently
+                            originalPrice={null}
                             rating={dish.rating}
                             reviewCount={dish.reviewCount || 0}
                             time={dish.time}
                             calories={dish.calories}
-                            description={dish.desc} // mapped from desc
+                            description={dish.desc}
                             aiAnalysis={aiAnalysis}
                         />
 
@@ -190,14 +190,14 @@ export default function DishPage() {
 
                         <CustomizationOptions extras={dish.extras} selectedExtras={selectedExtras} onToggleExtra={handleToggleExtra} />
 
-                        {/* Mobile Add to Cart Placeholder */}
+
                         <div className="hidden md:block">
                             <AddToCart price={currentTotalPrice} dish={dish} selectedExtras={selectedExtras} />
                         </div>
                     </div>
                 </div>
 
-                {/* Mobile Add To Cart */}
+
                 <div className="md:hidden">
                     <AddToCart price={currentTotalPrice} dish={dish} selectedExtras={selectedExtras} />
                 </div>

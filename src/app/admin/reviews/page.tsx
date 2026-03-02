@@ -118,7 +118,7 @@ export default function AdminReviews() {
                         filteredReviews.map((review) => (
                             <div key={review.reviewid} className="p-6 hover:bg-gray-50/50 transition-colors">
                                 <div className="flex flex-col lg:flex-row gap-6">
-                                    {/* Left: Customer & Order Info */}
+                                    
                                     <div className="w-full lg:w-1/4 space-y-4 border-r-0 lg:border-r border-gray-100 pr-0 lg:pr-6">
                                         <div className="flex items-center gap-2 mb-2">
                                             {review.type === 'order' ? (
@@ -149,7 +149,7 @@ export default function AdminReviews() {
                                         </div>
                                     </div>
 
-                                    {/* Right: Review Content */}
+                                    
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex gap-1">

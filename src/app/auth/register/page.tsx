@@ -11,11 +11,11 @@ import { createClient } from "@/utils/supabase/client";
 export default function RegisterPage() {
     const router = useRouter();
 
-    // States quản lý giao diện
+    
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    // States quản lý dữ liệu nhập (Form Data)
+    
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -28,7 +28,7 @@ export default function RegisterPage() {
         setShowPassword(!showPassword);
     };
 
-    // Hàm xử lý đăng ký kết nối với Supabase qua API Route
+    
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -36,7 +36,7 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            // Gọi đến API route: /api/auth/register
+            
             const response = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: {
@@ -58,7 +58,7 @@ export default function RegisterPage() {
                 alert("Đăng ký thành công! Chào mừng bạn đến với SmartBite.");
                 router.push("/auth/login");
             } else {
-                // Hiển thị lỗi từ server (VD: Email đã tồn tại)
+                
                 alert(result.error || "Đăng ký thất bại. Vui lòng thử lại.");
             }
         } catch (error) {
@@ -86,7 +86,7 @@ export default function RegisterPage() {
 
     return (
         <div className="flex min-h-screen w-full">
-            {/* Left Section - Hero/Promotional */}
+            
             <div className="hidden w-1/2 flex-col justify-between bg-orange-500 p-12 text-white lg:flex relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10 pointer-events-none"
                     style={{ backgroundImage: 'radial-gradient(circle, #fff 2px, transparent 2.5px)', backgroundSize: '30px 30px' }}>
@@ -136,7 +136,7 @@ export default function RegisterPage() {
                 </div>
             </div>
 
-            {/* Right Section - Form */}
+            
             <div className="flex w-full flex-col justify-center bg-white p-8 lg:w-1/2 lg:p-12 xl:p-24">
                 <div className="mx-auto w-full max-w-md space-y-8">
                     <div className="space-y-2 relative">

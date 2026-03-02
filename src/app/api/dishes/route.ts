@@ -7,7 +7,7 @@ export async function GET() {
     try {
         const supabase = await createClient();
 
-        // Fetch dishes joined with Categories and Reviews
+        
         const { data: dishes, error } = await supabase
             .from('fooditems')
             .select(`
@@ -18,7 +18,7 @@ export async function GET() {
 
         if (error) throw error;
 
-        // Map DB data back to Frontend format
+        
         const formattedDishes = dishes.map(dish => {
             const reviews = (dish as any).foodreviews || [];
             const reviewCount = reviews.length;
@@ -60,10 +60,10 @@ export async function POST(request: Request) {
         const supabase = await createClient();
         const dish = await request.json();
 
-        // 1. Prepare FoodItems data
+        
         const foodId = dish.id || "FOOD-" + Math.random().toString(36).substring(2, 9).toUpperCase();
 
-        // Clean price: "50.000 đ" -> 50000
+        
         const rawPrice = typeof dish.price === 'string'
             ? parseInt(dish.price.replace(/\D/g, '')) || 0
             : dish.price;
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         const calories = parseInt(String(dish.calories).replace(/\D/g, '')) || 0;
         const prepTime = parseInt(String(dish.time).replace(/\D/g, '')) || 0;
 
-        // Store extra metadata in Ingredients column as JSON
+        
         const metadata = {
             rating: dish.rating,
             dietaryBalance: dish.dietaryBalance,
@@ -99,18 +99,18 @@ export async function POST(request: Request) {
 
         if (foodError) throw foodError;
 
-        // 2. Handle Toppings (Extras)
+        
         if (dish.extras && dish.extras.length > 0) {
             for (const extra of dish.extras) {
                 const toppingId = "TOP-" + extra.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
                 const toppingPrice = parseInt(String(extra.price).replace(/\D/g, '')) || 0;
 
-                // Insert into ToppingOptions (ignore if exists)
+                
                 await supabase
                     .from('toppingoptions')
                     .upsert([{ toppingid: toppingId, toppingname: extra.name, price: toppingPrice }], { onConflict: 'toppingid' });
 
-                // Link in FoodToppings
+                
                 await supabase
                     .from('foodtoppings')
                     .upsert([{ foodid: foodId, toppingid: toppingId }], { onConflict: 'foodid,toppingid' });

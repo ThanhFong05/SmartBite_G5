@@ -59,7 +59,7 @@ export default function OrderTrackingPage() {
 
                         setOrderStatus(statusMap[o.orderstatus] || 'pending');
 
-                        // Map DB format sang format cũ của UI để tránh sửa quá nhiều code render
+                        
                         const paymentInfo = Array.isArray(o.payments) ? o.payments[0] : o.payments;
                         setCurrentOrder({
                             id: o.orderid,
@@ -71,7 +71,7 @@ export default function OrderTrackingPage() {
                             paymentMethod: paymentInfo?.paymentmethod || 'Unknown',
                             paymentStatus: paymentInfo?.paymentstatus || 'pending',
                             cartDetails: o.orderitems?.map((oi: any) => {
-                                const toppingObj: any = {};
+                                const toppingObj: any = ;
                                 const toppingsStr = oi.orderitemtoppings?.map((t: any) => t.toppingoptions?.toppingname).filter(Boolean).join(", ");
                                 if (toppingsStr) toppingObj["Thêm"] = toppingsStr;
 
@@ -94,7 +94,7 @@ export default function OrderTrackingPage() {
         }
 
         fetchOrder()
-        const interval = setInterval(fetchOrder, 5000) // Poll every 5s
+        const interval = setInterval(fetchOrder, 5000) 
 
         return () => clearInterval(interval)
     }, [params.id])
@@ -118,7 +118,7 @@ export default function OrderTrackingPage() {
 
     const currentStatus = orderStatus || 'pending'
 
-    // Nếu ID là mã mock cũ thì mới hiện trang 404 thực sự
+    
     if (notFound && (params.id as string)?.startsWith('SB-')) {
         return (
             <div className="min-h-screen bg-[#FDFDFD] flex flex-col font-sans text-sans">
@@ -149,14 +149,14 @@ export default function OrderTrackingPage() {
             <Navbar />
 
             <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl">
-                {/* Breadcrumb */}
+                
                 <div className="text-sm font-medium text-gray-500 mb-6 flex items-center gap-2">
                     <Link href="/" className="hover:text-orange-500 transition-colors">Home</Link>
                     <ChevronRight className="w-4 h-4" />
                     <span className="text-gray-900">Order Tracking</span>
                 </div>
 
-                {/* Header Section */}
+                
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Order {params.id ? `#${params.id}` : ''}</h1>
@@ -202,10 +202,10 @@ export default function OrderTrackingPage() {
                 </div>
 
                 <div className="grid lg:grid-cols-12 gap-8">
-                    {/* Left Column - Order Status & Items */}
+                    
                     <div className="lg:col-span-8 space-y-6">
 
-                        {/* Status Stepper */}
+                        
                         <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
                             <h2 className="text-lg font-bold text-gray-900 mb-8 flex items-center gap-2">
                                 <span className="w-1.5 h-6 bg-orange-500 rounded-full inline-block"></span>
@@ -213,7 +213,7 @@ export default function OrderTrackingPage() {
                             </h2>
 
                             <div className="relative flex justify-between items-start">
-                                {/* Line connector */}
+                                
                                 <div className="absolute top-6 left-[10%] right-[10%] h-1 bg-gray-100 rounded-full -z-10"></div>
                                 <div
                                     className={`absolute top-6 left-[10%] h-1 rounded-full -z-10 transition-all duration-700 ease-in-out ${['pending', 'accepted'].includes(currentStatus) ? 'w-0' :
@@ -222,7 +222,7 @@ export default function OrderTrackingPage() {
                                         }`}
                                 ></div>
 
-                                {/* Step 1: Confirmed */}
+                                
                                 <div className="flex flex-col items-center w-1/3 z-10">
                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg mb-3 border-4 border-white transition-all ${currentStatus === 'pending' ? 'bg-orange-100 text-orange-500 shadow-orange-50' :
                                         'bg-green-500 text-white shadow-green-200'
@@ -236,7 +236,7 @@ export default function OrderTrackingPage() {
                                     <p className="text-xs text-gray-500 text-center mt-1">{currentOrder?.time || "--:--"}</p>
                                 </div>
 
-                                {/* Step 2: Preparing */}
+                                
                                 <div className="flex flex-col items-center w-1/3 z-10">
                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 border-4 border-white relative transition-all duration-500 ${['pending', 'accepted'].includes(currentStatus) ? 'bg-gray-100 text-gray-400' :
                                         currentStatus === 'preparing' ? 'bg-orange-200 text-orange-600 shadow-lg shadow-orange-100' :
@@ -256,7 +256,7 @@ export default function OrderTrackingPage() {
                                     )}
                                 </div>
 
-                                {/* Step 3: Delivering */}
+                                
                                 <div className="flex flex-col items-center w-1/3 z-10">
                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 border-4 border-white relative transition-all duration-500 ${['pending', 'accepted', 'preparing'].includes(currentStatus) ? 'bg-gray-100 text-gray-400' :
                                         currentStatus === 'delivering' ? 'bg-blue-200 text-blue-600 shadow-lg shadow-blue-100' :
@@ -276,7 +276,7 @@ export default function OrderTrackingPage() {
                             </div>
                         </div>
 
-                        {/* Ordered Items */}
+                        
                         <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
                             <h2 className="text-lg font-bold text-gray-900 mb-6">Ordered Items</h2>
 
@@ -316,7 +316,7 @@ export default function OrderTrackingPage() {
                                 )}
                             </div>
 
-                            {/* Pricing summary */}
+                            
                             <div className="space-y-3 pt-6 w-full max-w-sm ml-auto">
                                 <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-2">
                                     <span className="text-xl font-bold text-gray-900">Total</span>
@@ -326,10 +326,10 @@ export default function OrderTrackingPage() {
                         </div>
                     </div>
 
-                    {/* Right Column - Delivery Info & Map */}
+                    
                     <div className="lg:col-span-4 space-y-6">
 
-                        {/* Driver Map Card */}
+                        
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="p-5 flex justify-between items-center bg-white border-b border-gray-50 z-10 relative">
                                 <h3 className="font-bold text-gray-900">Driver Location</h3>
@@ -339,14 +339,14 @@ export default function OrderTrackingPage() {
                                 </span>
                             </div>
 
-                            {/* Map Placeholder */}
+                            
                             <div className="relative h-48 bg-orange-100 flex items-center justify-center overflow-hidden transition-opacity duration-1000">
                                 <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\' fill=\'%23f97316\' fill-opacity=\'0.4\' fill-rule=\'nonzero\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
-                                {/* Route line Mock */}
+                                
                                 <svg className={`absolute w-full h-full drop-shadow-md transition-colors ${currentStatus === 'delivering' ? 'text-orange-300' : 'text-gray-300 opacity-50'}`} viewBox="0 0 100 100" preserveAspectRatio="none">
                                     <path d="M20,80 Q40,40 80,20" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="5,5" className={currentStatus === 'delivering' ? 'animate-[dash_2s_linear_infinite]' : ''} />
                                 </svg>
-                                {/* Driver Pin Mock */}
+                                
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
                                     <div className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 drop-shadow-md">2.5km</div>
                                     <div className="w-8 h-8 rounded-full bg-gray-900 border-2 border-white flex items-center justify-center shadow-lg">
@@ -355,7 +355,7 @@ export default function OrderTrackingPage() {
                                 </div>
                             </div>
 
-                            {/* Driver Details */}
+                            
                             <div className="p-5 flex items-center gap-4 bg-white relative z-10 border-t border-gray-100">
                                 <div className="relative">
                                     <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
@@ -383,7 +383,7 @@ export default function OrderTrackingPage() {
                             </div>
                         </div>
 
-                        {/* Delivery Information Block */}
+                        
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                             <h3 className="font-bold text-gray-900 mb-5">Delivery Information</h3>
 
@@ -428,7 +428,7 @@ export default function OrderTrackingPage() {
                             </div>
                         </div>
 
-                        {/* AI Suggestion Box */}
+                        
                         <div className="bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl p-6 shadow-lg shadow-orange-200 text-white border border-orange-400">
                             <div className="flex items-center gap-2 mb-3">
                                 <Lightbulb className="w-5 h-5 text-yellow-300" />

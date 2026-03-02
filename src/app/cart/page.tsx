@@ -5,10 +5,11 @@ import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import {
     Trash2, Minus, Plus, MapPin,
-    Banknote, QrCode, Info,
+    Banknote, QrCode, Info, Ticket,
     Flame, Clock, ShoppingBag, Sparkles, AlertCircle, ChevronRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
@@ -23,7 +24,9 @@ export default function CartPage() {
     const [addressTitle, setAddressTitle] = useState("Bitexco Office")
     const [addressDetails, setAddressDetails] = useState("Floor 15, No 2 Hai Trieu, D.1, HCMC")
     const [isLoggedIn, setIsLoggedIn] = useState(false)
-
+    const [voucherCode, setVoucherCode] = useState("")
+    const [availableVouchers, setAvailableVouchers] = useState<any[]>([])
+    const [appliedVoucher, setAppliedVoucher] = useState<any | null>(null)
     useEffect(() => {
         setIsMounted(true)
 
@@ -35,13 +38,27 @@ export default function CartPage() {
                 setAddressTitle("Registered Address");
                 setAddressDetails(user.addressdelivery);
             }
-            // Load cart from DB
+            
             const userId = user.userid || user.UserId || user.id;
             loadCart(userId);
         } else {
             setIsLoggedIn(false);
             setCartItems([]);
         }
+
+        
+        const fetchActiveVouchers = async () => {
+            try {
+                const res = await fetch("/api/vouchers?status=Active");
+                if (res.ok) {
+                    const data = await res.json();
+                    setAvailableVouchers(data);
+                }
+            } catch (err) {
+                console.error("Error fetching vouchers:", err);
+            }
+        };
+        fetchActiveVouchers();
 
         const handleCartUpdate = () => {
             const userStr = localStorage.getItem("user");
@@ -62,7 +79,7 @@ export default function CartPage() {
             if (res.ok) {
                 const data = await res.json();
                 const items = data.items || [];
-                // Map data from DB format to UI format
+                
                 const formattedItems = items.map((item: any) => {
                     const dish = item.fooditems;
                     const toppings = item.cartitemtoppings?.map((t: any) => t.toppingoptions?.toppingname).filter(Boolean).join(", ");
@@ -76,12 +93,12 @@ export default function CartPage() {
                     const finalPrice = basePrice + extraPrice;
 
                     return {
-                        id: item.cartitemid, // Use cartitemid for UI operations
+                        id: item.cartitemid, 
                         foodId: dish?.foodid,
                         title: dish?.foodname,
                         image: dish?.foodimageurl,
-                        price: basePrice, // Chỉ hiển thị basePrice
-                        extraPrice: extraPrice, // Tách extraPrice để tính riêng
+                        price: basePrice, 
+                        extraPrice: extraPrice, 
                         quantity: Number(item.quantity) || 0,
                         desc: (dish?.descriptions || "") + (toppings ? ` (Thêm: ${toppings})` : ""),
                         calories: dish?.calories ? `${dish.calories} kcal` : "0 kcal",
@@ -90,7 +107,7 @@ export default function CartPage() {
                     };
                 });
                 setCartItems(formattedItems);
-                // Dispatch event to update Navbar count
+                
                 window.dispatchEvent(new Event('cartUpdate'));
             }
         } catch (error) {
@@ -105,8 +122,8 @@ export default function CartPage() {
 
         const newQuantity = item.quantity + delta;
 
-        // Nếu quantity < 0, giữ nguyên (không làm gì)
-        // Nếu quantity === 0, backend sẽ tự động xoá
+        
+        
         if (newQuantity < 0) return;
 
         try {
@@ -155,7 +172,7 @@ export default function CartPage() {
         }
     }
 
-    // Parse price string like "85.000 đ" or "85000" to number
+    
     const parsePrice = (priceStr: string | number) => {
         if (!priceStr) return 0;
         if (typeof priceStr === 'number') return priceStr;
@@ -169,12 +186,23 @@ export default function CartPage() {
 
     const subtotal = cartItems.reduce((sum, item) => sum + (parsePrice(item.price) * (item.quantity || 1)) + parsePrice(item.extraPrice || 0), 0)
     const shippingFee = subtotal > 0 ? 15000 : 0
-    const discount = subtotal >= 200000 ? 10000 : 0
-    const total = subtotal + shippingFee - discount
+
+    
+    let voucherDiscount = 0;
+    if (appliedVoucher) {
+        if (appliedVoucher.vouchertype === 'Ship' && appliedVoucher.discountvalue) {
+            voucherDiscount = Math.min(shippingFee, appliedVoucher.discountvalue);
+        } else {
+            voucherDiscount = appliedVoucher.discountvalue || 0;
+        }
+    }
+
+    const totalDiscount = voucherDiscount;
+    const total = subtotal + shippingFee - totalDiscount;
 
     const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0)
 
-    // Rough nutrition estimate (could parse from string or just placeholder for demo)
+    
     const totalCalories = cartItems.reduce((sum, item) => {
         const cal = parseInt((item.calories || "0").replace(/\D/g, '')) || 0;
         return sum + (cal * (item.quantity || 1));
@@ -193,9 +221,9 @@ export default function CartPage() {
                 </div>
 
                 <div className="grid lg:grid-cols-12 gap-8">
-                    {/* Left Column - Cart Items & Suggestions */}
+                    
                     <div className="lg:col-span-8 space-y-8">
-                        {/* Cart Items Box */}
+                        
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-2">
@@ -300,22 +328,22 @@ export default function CartPage() {
                             )}
                         </div>
 
-                        {/* AI Suggestions Box (Removed) */}
+                        
                     </div>
 
-                    {/* Right Column - Payment & Summary */}
+                    
                     <div className="lg:col-span-4">
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-24">
                             <h2 className="text-xl font-bold text-gray-900 mb-6">Payment Information</h2>
 
-                            {/* Address */}
+                            
                             <div className="mb-6">
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="text-xs font-bold text-gray-500 tracking-wider uppercase">Delivery Address</span>
                                     <button
                                         onClick={() => {
                                             if (isEditingAddress) {
-                                                // Target save action
+                                                
                                                 try {
                                                     const userStr = localStorage.getItem("user");
                                                     if (userStr) {
@@ -332,7 +360,7 @@ export default function CartPage() {
                                                             }
                                                         }
                                                     }
-                                                } catch (e) { }
+                                                } catch (e) 
                                                 setIsEditingAddress(false);
                                             } else {
                                                 setIsEditingAddress(true);
@@ -375,7 +403,7 @@ export default function CartPage() {
                                 </div>
                             </div>
 
-                            {/* Payment Methods */}
+                            
                             <div className="mb-6">
                                 <span className="text-xs font-bold text-gray-500 tracking-wider uppercase mb-3 block">Payment Method</span>
                                 <div className="space-y-3">
@@ -405,25 +433,120 @@ export default function CartPage() {
 
                             <Separator className="my-6 border-dashed" />
 
-                            {/* Summary */}
-                            <div className="space-y-3 mb-6">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Subtotal ({totalItems} items)</span>
-                                    <span className="font-medium text-gray-900">{formatPrice(subtotal)}</span>
+                            
+                            <div className="mb-6">
+                                <span className="text-xs font-bold text-gray-500 tracking-wider uppercase mb-3 block">Voucher</span>
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Nhập hoặc chọn mã..."
+                                        className="bg-white border-gray-200 focus-visible:ring-orange-500/20 font-medium flex-1 h-11 rounded-xl uppercase"
+                                        value={voucherCode}
+                                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                                    />
+                                    <Button
+                                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold h-11 px-6 rounded-xl shadow-sm transition-all"
+                                        onClick={async () => {
+                                            if (!voucherCode) {
+                                                alert("Vui lòng nhập mã voucher.");
+                                                return;
+                                            }
+
+                                            if (!isLoggedIn) {
+                                                alert("Vui lòng đăng nhập để sử dụng tính năng này.");
+                                                return;
+                                            }
+
+                                            try {
+                                                const userStr = localStorage.getItem("user");
+                                                const user = JSON.parse(userStr || "");
+                                                const userId = user.userid || user.UserId || user.id;
+
+                                                const res = await fetch("/api/vouchers/validate", {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({ userid: userId, vouchercode: voucherCode })
+                                                });
+
+                                                const data = await res.json();
+                                                if (res.ok && data.valid) {
+                                                    if (subtotal < data.voucher.minordervalue) {
+                                                        alert(`Đơn hàng cần đạt tối thiểu ${formatPrice(data.voucher.minordervalue)} để áp dụng mã này.`);
+                                                        return;
+                                                    }
+                                                    setAppliedVoucher(data.voucher);
+                                                    alert(`Đã áp dụng mã voucher ${data.voucher.vouchercode} (Giảm ${formatPrice(data.voucher.discountvalue)})`);
+                                                } else {
+                                                    alert(data.error || "Mã voucher không hợp lệ.");
+                                                }
+                                            } catch (error) {
+                                                console.error("Voucher validation error:", error);
+                                                alert("Lỗi khi kiểm tra mã voucher.");
+                                            }
+                                        }}
+                                    >
+                                        Apply
+                                    </Button>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Shipping Fee</span>
-                                    <span className="font-medium text-gray-900">{formatPrice(shippingFee)}</span>
-                                </div>
-                                {discount > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Discount</span>
-                                        <span className="font-medium text-green-600">-{formatPrice(discount)}</span>
+                                {appliedVoucher && (
+                                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-green-700">
+                                            <Ticket className="w-4 h-4" />
+                                            <span className="text-sm font-semibold">Đã áp dụng: {appliedVoucher.vouchercode}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => { setAppliedVoucher(null); setVoucherCode(""); }}
+                                            className="text-xs text-red-500 hover:underline font-medium"
+                                        >
+                                            Gỡ bỏ
+                                        </button>
+                                    </div>
+                                )}
+
+                                {availableVouchers.length > 0 && !appliedVoucher && (
+                                    <div className="mt-3 space-y-2">
+                                        <p className="text-xs text-gray-500 font-medium mb-1">Mã khả dụng:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {availableVouchers.map(v => (
+                                                <button
+                                                    key={v.voucherid}
+                                                    className="border border-orange-200 bg-orange-50/50 hover:bg-orange-100 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
+                                                    onClick={() => {
+                                                        setVoucherCode(v.vouchercode);
+                                                    }}
+                                                >
+                                                    <Ticket className="w-3.5 h-3.5" />
+                                                    {v.vouchercode}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Nutrition Box */}
+                            <Separator className="my-6 border-dashed" />
+
+                            
+                            <div className="space-y-3 mb-6">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Shipping</span>
+                                    <span className="font-medium text-gray-900">{formatPrice(shippingFee)}</span>
+                                </div>
+                                {appliedVoucher && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-orange-600 flex items-center gap-1">
+                                            <Ticket className="w-3 h-3" /> Voucher Discount
+                                        </span>
+                                        <span className="font-medium text-orange-600">-{formatPrice(voucherDiscount)}</span>
+                                    </div>
+                                )}
+                                <Separator className="my-3 border-gray-100" />
+                                <div className="flex justify-between text-base font-bold">
+                                    <span className="text-gray-500">Total Discount</span>
+                                    <span className="font-medium text-green-600">-{formatPrice(totalDiscount)}</span>
+                                </div>
+                            </div>
+
+                            
                             {cartItems.length > 0 && (
                                 <div className="bg-blue-50/50 rounded-xl p-3 border border-blue-100 mb-6 flex gap-3">
                                     <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -436,7 +559,7 @@ export default function CartPage() {
                                 </div>
                             )}
 
-                            {/* Total Container */}
+                            
                             <div className="pt-2 mb-6 text-right">
                                 <div className="text-2xl font-bold text-orange-500">
                                     {formatPrice(total)}
@@ -457,7 +580,7 @@ export default function CartPage() {
 
                                     try {
                                         const userStr = localStorage.getItem("user");
-                                        const user = JSON.parse(userStr || "{}");
+                                        const user = JSON.parse(userStr || "");
                                         const userId = user.userid || user.UserId || user.id;
 
                                         const res = await fetch("/api/orders", {
@@ -467,13 +590,17 @@ export default function CartPage() {
                                                 userid: userId,
                                                 shippingaddress: addressDetails,
                                                 totalprice: total,
-                                                paymentmethod: paymentMethod
+                                                paymentmethod: paymentMethod,
+                                                vouchercode: appliedVoucher?.vouchercode || null
                                             })
                                         });
 
                                         const data = await res.json();
                                         if (res.ok && data.orderId) {
-                                            // Chuyển sang trang QR kèm mã đơn hàng
+                                            
+                                            setCartItems([]);
+                                            setAppliedVoucher(null);
+                                            window.dispatchEvent(new Event('cartUpdate'));
                                             router.push(`/checkout/qr?orderId=${data.orderId}`);
                                         } else {
                                             alert(`Lỗi đặt hàng: ${data.error || "Không rõ nguyên nhân"}`);
@@ -490,9 +617,9 @@ export default function CartPage() {
                         </div>
                     </div>
                 </div>
-            </main>
+            </main >
 
             <Footer />
-        </div>
+        </div >
     )
 }
