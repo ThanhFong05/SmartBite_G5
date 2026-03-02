@@ -360,7 +360,9 @@ export default function CartPage() {
                                                             }
                                                         }
                                                     }
-                                                } catch (e) 
+                                                } catch (e) {
+                                                    console.error("Error saving address:", e);
+                                                }
                                                 setIsEditingAddress(false);
                                             } else {
                                                 setIsEditingAddress(true);

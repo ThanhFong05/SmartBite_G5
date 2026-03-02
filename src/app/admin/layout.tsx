@@ -12,7 +12,8 @@ import {
     LogOut,
     Search,
     Bell,
-    Star
+    Star,
+    Ticket
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -37,7 +38,7 @@ export default function AdminLayout({
 
     return (
         <div className="flex min-h-screen bg-[#FDFDFD]">
-            
+
             <aside className="fixed left-0 top-0 z-40 h-screen w-72 bg-white border-r border-gray-100 hidden lg:flex flex-col">
                 <div className="p-6">
                     <Link href="/admin" className="flex items-center gap-3 mb-10">
@@ -116,6 +117,17 @@ export default function AdminLayout({
                             <Star className="h-5 w-5" />
                             <span className="font-medium">Customer Reviews</span>
                         </Link>
+
+                        <Link
+                            href="/admin/vouchers"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive('/admin/vouchers')
+                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
+                            <Ticket className="h-5 w-5" />
+                            <span className="font-medium">Voucher Management</span>
+                        </Link>
                     </nav>
                 </div>
 
@@ -140,9 +152,9 @@ export default function AdminLayout({
                 </div>
             </aside>
 
-            
+
             <div className="lg:ml-72 flex-1 flex flex-col min-h-screen">
-                
+
                 <header className="bg-white px-8 py-5 flex items-center justify-between border-b border-gray-50 sticky top-0 z-30">
                     <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
 
