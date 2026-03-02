@@ -147,7 +147,7 @@ export default function MenuManagement() {
             if (res.ok) {
                 const data: Category[] = await res.json()
                 setCategories(data)
-                
+
                 if (data.length > 0 && !newDish.category) {
                     setNewDish(prev => ({ ...prev, category: data[0].categoryid }))
                 }
@@ -197,7 +197,7 @@ export default function MenuManagement() {
         handleAiReviewChange('tags', newTags)
     }
 
-    
+
     const addIngredient = () => {
         setNewDish(prev => ({
             ...prev,
@@ -217,7 +217,7 @@ export default function MenuManagement() {
         setNewDish(prev => ({ ...prev, ingredients: updatedIngredients }))
     }
 
-    
+
     const addExtra = () => {
         setNewDish(prev => ({
             ...prev,
@@ -251,7 +251,7 @@ export default function MenuManagement() {
         try {
             let imageUrl = newDish.image
 
-            
+
             if (selectedFile) {
                 const fileExt = selectedFile.name.split('.').pop()
                 const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
@@ -268,7 +268,7 @@ export default function MenuManagement() {
                     return
                 }
 
-                
+
                 const { data: publicUrlData } = supabase.storage
                     .from('food-images')
                     .getPublicUrl(filePath)
@@ -276,7 +276,7 @@ export default function MenuManagement() {
                 imageUrl = publicUrlData.publicUrl
             }
 
-            
+
             const finalDish = { ...newDish, image: imageUrl }
 
             const url = editingDishId ? `/api/dishes/${editingDishId}` : "/api/dishes"
@@ -329,7 +329,7 @@ export default function MenuManagement() {
     }
 
     const handleDelete = async (id: string) => {
-        
+
         await handleUpdateStatus(id, 'Unavailable');
     }
 
@@ -360,7 +360,7 @@ export default function MenuManagement() {
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="grid gap-6 py-4">
-                            
+
                             <div className="grid gap-4">
                                 <h3 className="font-semibold text-gray-900 border-b pb-2">Basic Information</h3>
                                 <div className="grid gap-2">
@@ -383,7 +383,21 @@ export default function MenuManagement() {
                                                 <Input
                                                     id="image"
                                                     type="file"
-                                                    accept="image}
+                                                    accept="image/*"
+                                                    onChange={handleFileChange}
+                                                    className="cursor-pointer"
+                                                />
+                                            </div>
+                                            {selectedFile && (
+                                                <p className="text-xs text-orange-600 font-medium">
+                                                    Selected: {selectedFile.name}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <Label className="text-base font-semibold">Categories</Label>
@@ -463,7 +477,7 @@ export default function MenuManagement() {
                             </div>
 
 
-                            
+
                             <div className="grid grid-cols-1 gap-6">
                                 <div className="space-y-3">
                                     <Label className="text-base font-semibold">Diet</Label>
@@ -491,7 +505,7 @@ export default function MenuManagement() {
                                 </div>
                             </div>
 
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <Label className="text-base font-semibold">Food Allergies</Label>
@@ -543,7 +557,7 @@ export default function MenuManagement() {
                                 </div>
                             </div>
 
-                            
+
                             <div className="grid gap-4">
                                 <h3 className="font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
                                     SmartBite AI Review
@@ -579,7 +593,7 @@ export default function MenuManagement() {
                                 </div>
                             </div>
 
-                            
+
                             <div className="grid gap-4">
                                 <div className="flex items-center justify-between border-b pb-2">
                                     <h3 className="font-semibold text-gray-900">Main Ingredients</h3>
@@ -619,7 +633,7 @@ export default function MenuManagement() {
                                 )}
                             </div>
 
-                            
+
                             <div className="grid gap-4">
                                 <div className="flex items-center justify-between border-b pb-2">
                                     <h3 className="font-semibold text-gray-900">Add Extras</h3>
